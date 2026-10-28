@@ -1,0 +1,412 @@
+<div class="content-wrapper">
+  <!-- Content Header -->
+  <div class="content-header py-2 px-3">
+    <div class="container-fluid p-0">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h1 class="page-main-title">Vehicle Fleet Master</h1>
+          <p class="text-muted small mb-0 mt-0">
+            <i class="far fa-calendar-alt me-1 text-primary"></i>
+            {{ today }} • Guwahati Municipal Corporation Division
+          </p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-default btn-sm shadow-sm btn-header-action" (click)="reloadDbVehicles()" title="Refresh List">
+            <i class="fas fa-sync-alt me-1"></i> Refresh
+          </button>
+          <button class="btn btn-primary btn-sm shadow-sm btn-header-action" (click)="generatePDF()">
+            <i class="fas fa-file-pdf me-1"></i> Export PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <section class="content px-3 pb-3 pt-0">
+    <div class="container-fluid p-0">
+      <!-- 4 Operations Summary Stat Cards -->
+      <div class="row g-2 mb-2">
+        <!-- Total Vehicles -->
+        <div class="col-xl-3 col-md-6">
+          <div class="card stat-card h-100 p-2 mb-0">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="text-muted small fw-bold text-uppercase tracking-wider">Total Fleet</span>
+                <h3 class="fw-bold mb-0 mt-1 text-dark stat-num">{{ totalVehicles }}</h3>
+                <span class="badge badge-secondary mt-1 stat-badge">Monitored</span>
+              </div>
+              <div class="icon-box bg-primary">
+                <i class="fas fa-bus"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Moving Vehicles -->
+        <div class="col-xl-3 col-md-6">
+          <div class="card stat-card h-100 p-2 mb-0">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="text-muted small fw-bold text-uppercase tracking-wider">Moving Active</span>
+                <h3 class="fw-bold mb-0 mt-1 text-success stat-num">{{ activeVehicles }}</h3>
+                <span class="badge badge-success mt-1 stat-badge">In Transit</span>
+              </div>
+              <div class="icon-box bg-success">
+                <i class="fas fa-route"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stopped Vehicles -->
+        <div class="col-xl-3 col-md-6">
+          <div class="card stat-card h-100 p-2 mb-0">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="text-muted small fw-bold text-uppercase tracking-wider">Stopped / Idle</span>
+                <h3 class="fw-bold mb-0 mt-1 text-warning stat-num">{{ stoppedVehicles }}</h3>
+                <span class="badge badge-warning mt-1 stat-badge">Stationary</span>
+              </div>
+              <div class="icon-box bg-warning">
+                <i class="fas fa-parking"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Unreachable Vehicles -->
+        <div class="col-xl-3 col-md-6">
+          <div class="card stat-card h-100 p-2 mb-0">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="text-muted small fw-bold text-uppercase tracking-wider">Unreachable</span>
+                <h3 class="fw-bold mb-0 mt-1 text-danger stat-num">{{ unreachableVehicles }}</h3>
+                <span class="badge badge-danger mt-1 stat-badge">Offline GPS</span>
+              </div>
+              <div class="icon-box bg-danger">
+                <i class="fas fa-wifi"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Fleet Table Card -->
+      <div class="card shadow-sm fleet-card mb-0">
+        <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-list-alt text-primary"></i>
+            <span class="fw-bold text-dark table-title">Shift Log Details & Fleet Allocation</span>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <span class="live-stream-badge">
+              <span class="pulse-dot-green"></span> Live Stream
+            </span>
+
+            <div class="input-group input-group-sm search-input-group" style="width: 250px">
+              <span class="input-group-text bg-light border-right-0">
+                <i class="fas fa-search text-muted"></i>
+              </span>
+              <input
+                type="text"
+                class="form-control border-left-0 border-right-0 bg-light"
+                placeholder="Search vehicle no, type..."
+                [(ngModel)]="searchText"
+                (input)="searchVehicle()"
+                (keyup)="searchVehicle()"
+              />
+              <button 
+                *ngIf="searchText" 
+                class="btn btn-sm btn-light border-left-0" 
+                (click)="clearSearch()" 
+                type="button" 
+                title="Clear Search"
+              >
+                <i class="fas fa-times text-muted"></i>
+              </button>
+            </div>
+
+            <div class="text-muted small fw-semibold text-nowrap">
+              {{ filteredVehicles.length }}/{{ vehicles.length }}
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover table-striped table-sm custom-fleet-table mb-0">
+            <thead>
+              <tr>
+                <th style="width: 32px;" class="text-center">#</th>
+                <th style="width: 80px;">Division</th>
+                <th style="width: 100px;">Vehicle No</th>
+                <th style="width: 80px;">Type</th>
+                <th style="width: 85px;">Supervisor</th>
+                <th style="width: 85px;">Driver</th>
+                <th style="width: 70px;">Box ID</th>
+                <th style="width: 65px;">Speed</th>
+                <th style="width: 85px;">Status</th>
+                <th>Location</th>
+                <th style="width: 95px;">Updated</th>
+                <th style="width: 55px;">Dist</th>
+                <th style="width: 65px;" class="text-center">Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let v of filteredVehicles; let i = index; trackBy: trackByVehicle" [class.row-highlight-active]="v.justUpdated">
+                <td class="text-center text-muted fw-bold">{{ i + 1 }}</td>
+
+                <!-- Division -->
+                <td>
+                  <span
+                    class="badge division-badge"
+                    [ngClass]="v.division ? 'badge-primary' : 'badge-secondary'"
+                  >
+                    {{ v.division || "Unassigned" }}
+                  </span>
+                </td>
+
+                <!-- Vehicle No -->
+                <td class="fw-bold text-dark text-nowrap">{{ v.VehName }}</td>
+
+                <!-- Type -->
+                <td class="text-nowrap">{{ v.vehicle_type || "-" }}</td>
+
+                <!-- Supervisor -->
+                <td class="text-truncate text-cell" [title]="v.operator_name || '-'">
+                  {{ v.operator_name || "-" }}
+                </td>
+
+                <!-- Driver -->
+                <td class="text-truncate text-cell" [title]="v.driver_name || '-'">
+                  {{ v.driver_name || "-" }}
+                </td>
+
+                <!-- Box ID -->
+                <td class="font-monospace text-muted small">{{ v.BoxId }}</td>
+
+                <!-- Speed -->
+                <td class="fw-semibold text-nowrap">
+                  <span [class.data-changed-pulse]="v.speedChanged">
+                    {{ v.Speed }} km/h
+                    <span *ngIf="v.speedChanged" class="live-change-dot" title="Speed updated live"></span>
+                  </span>
+                </td>
+
+                <!-- Status Badge -->
+                <td class="text-nowrap">
+                  <span
+                    class="badge status-badge"
+                    [class.data-changed-pulse]="v.statusChanged"
+                    [ngClass]="{
+                      'badge-success': v.VehicleStatus === 'Moving',
+                      'badge-danger': v.VehicleStatus === 'Stopped',
+                      'badge-secondary': v.VehicleStatus === 'Unreachable'
+                    }"
+                  >
+                    <i 
+                      class="fas fa-circle me-1" 
+                      style="font-size: 5px;"
+                    ></i>
+                    {{ v.VehicleStatus }}
+                  </span>
+                  <span *ngIf="v.statusChanged" class="live-change-dot" title="Status updated live"></span>
+                </td>
+
+                <!-- Location -->
+                <td class="loc-cell" [title]="v.Location">
+                  <span [class.data-changed-pulse]="v.locationChanged">{{ v.Location }}</span>
+                  <span *ngIf="v.locationChanged" class="live-change-dot" title="Location updated live"></span>
+                </td>
+
+                <!-- Last Update -->
+                <td class="date-cell text-nowrap">
+                  <span [class.data-changed-pulse]="v.justUpdated">{{ formatDate(v.Lastdate) }}</span>
+                </td>
+
+                <!-- Distance -->
+                <td class="fw-semibold text-nowrap">{{ v.Distance }} km</td>
+
+                <!-- Actions -->
+                <td class="text-center text-nowrap">
+                  <button
+                    *ngIf="!v.db_id"
+                    class="btn btn-success btn-action"
+                    (click)="openSaveModal(v)"
+                    title="Register Vehicle Master Record"
+                  >
+                    <i class="fas fa-plus"></i> Save
+                  </button>
+
+                  <button
+                    *ngIf="v.db_id"
+                    class="btn btn-warning btn-action"
+                    (click)="openUpdateModal(v)"
+                    title="Edit Vehicle Master Record"
+                  >
+                    <i class="fas fa-edit"></i> Edit
+                  </button>
+                </td>
+              </tr>
+
+              <tr *ngIf="filteredVehicles.length === 0 && !loading">
+                <td colspan="13" class="text-center py-4 text-muted">
+                  <i class="fas fa-search-minus fa-2x mb-2 text-secondary"></i>
+                  <p class="mb-0 fw-semibold">No vehicles match the selected criteria</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Modern Loading State Overlay -->
+        <div class="modern-loading-backdrop" *ngIf="loading">
+          <div class="modern-spinner-card">
+            <div class="modern-spinner-ring"></div>
+            <span class="modern-spinnerText">Loading live fleet data...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modern Add/Update Vehicle Modal -->
+  <div class="modal fade" id="vehicleModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-bus-alt"></i>
+            <h5 class="modal-title">
+              {{ selectedVehicle.id ? "Update Vehicle Record" : "Add Vehicle Master Record" }}
+            </h5>
+          </div>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="background: none; border: none; font-size: 24px;">
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Vehicle Registration No *</label>
+              <input
+                class="form-control"
+                [(ngModel)]="selectedVehicle.vehicle_no"
+                placeholder="e.g. AS-01-GC-1234"
+                [readonly]="selectedVehicle.id"
+              />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Allotted Division *</label>
+              <select class="form-control" [(ngModel)]="selectedVehicle.division">
+                <option value="" disabled>Select Division</option>
+                <option>DIVISION I</option>
+                <option>DIVISION II</option>
+                <option>DIVISION III</option>
+                <option>DIVISION IV</option>
+                <option>DIVISION V</option>
+                <option>DIVISION VI</option>
+                <option>ENFORCEMENT BRANCH</option>
+                <option>HORDING BRANCH</option>
+                <option>MSWM (P)</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Vehicle Type *</label>
+              <select class="form-control" [(ngModel)]="selectedVehicle.vehicle_type">
+                <option value="" disabled>Select Vehicle Type</option>
+                <option>Back Hoe Coader</option>
+                <option>Dumper</option>
+                <option>Mini Dumper</option>
+                <option>Water Sprinkler</option>
+                <option>Water Tanker</option>
+                <option>Road Sweeping Machine</option>
+                <option>Pickup Truck</option>
+                <option>Compactor</option>
+                <option>Tractor</option>
+                <option>Skid Steer Loader</option>
+                <option>Super Saucer</option>
+                <option>Mini Hopper Tripper</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Load Capacity (Tons / m³)</label>
+              <input
+                class="form-control"
+                placeholder="e.g. 5 Tons"
+                [(ngModel)]="selectedVehicle.capacity"
+              />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Ownership Entity</label>
+              <select class="form-control" [(ngModel)]="selectedVehicle.owner_name">
+                <option>Commissioner, GMC</option>
+                <option>NGO</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Designated Route</label>
+              <select class="form-control" [(ngModel)]="selectedVehicle.route_id">
+                <option value="">Select Pre-Fixed Route</option>
+                <option *ngFor="let r of routes" [value]="r.id">
+                  {{ r.routeName }} ({{ r.routeNo }})
+                </option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Allotted Supervisor</label>
+              <select class="form-control" [(ngModel)]="selectedVehicle.operator_id">
+                <option value="">Select Supervisor</option>
+                <option *ngFor="let o of operators" [value]="o.id">
+                  {{ o.operator_name }} ({{ o.operator_id }})
+                </option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Allotted Driver / Operator</label>
+              <select class="form-control" [(ngModel)]="selectedVehicle.driver_id">
+                <option value="">Select Driver</option>
+                <option *ngFor="let d of drivers" [value]="d.id">
+                  {{ d.driver_name }} ({{ d.driver_id }})
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-default" data-dismiss="modal">
+            Cancel
+          </button>
+
+          <button
+            *ngIf="!selectedVehicle.id"
+            class="btn btn-success"
+            (click)="saveVehicle()"
+          >
+            <i class="fas fa-check me-1"></i> Save Vehicle
+          </button>
+
+          <button
+            *ngIf="selectedVehicle.id"
+            class="btn btn-warning"
+            (click)="updateVehicleModal()"
+          >
+            <i class="fas fa-save me-1"></i> Update Vehicle
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

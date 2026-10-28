@@ -1,0 +1,289 @@
+<div class="content-wrapper">
+  <!-- Content Header -->
+  <div class="content-header">
+    <div class="container-fluid">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+          <h1 class="page-main-title">Pre-Fixed Vehicle Routes</h1>
+          <p class="text-muted small mb-0 mt-1">
+            <i class="fas fa-route me-1 text-primary"></i>
+            Designated municipal transit routes & distance telemetry
+          </p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-default btn-sm shadow-sm" (click)="getRoutes()" title="Refresh List">
+            <i class="fas fa-sync-alt me-1"></i> Refresh
+          </button>
+          <button class="btn btn-outline-primary btn-sm shadow-sm" (click)="generatePDF()" title="Export Routes Report as PDF">
+            <i class="fas fa-file-pdf me-1"></i> Generate Report
+          </button>
+          <button class="btn btn-primary btn-sm shadow-sm" (click)="openAddModal()">
+            <i class="fas fa-plus me-1"></i> Add New Route
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <section class="content">
+    <div class="container-fluid">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-map-signs text-primary"></i>
+            <span class="fw-bold text-dark">Active Route Catalog</span>
+          </div>
+
+          <div class="badge badge-primary">
+            {{ routes.length }} Total Routes
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover table-striped">
+            <thead>
+              <tr>
+                <th width="50">#</th>
+                <th>Depot</th>
+                <th>Start Point</th>
+                <th>End Point</th>
+                <th>Via Transit</th>
+                <th>Route No</th>
+                <th>Route Name</th>
+                <th>Distance (KM)</th>
+                <th>Status</th>
+                <th width="120" class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of routes; let i = index">
+                <td class="text-muted fw-bold">{{ i + 1 }}</td>
+                <td class="fw-semibold">{{ r.depot || '-' }}</td>
+                <td>{{ r.start || '-' }}</td>
+                <td>{{ r.end || '-' }}</td>
+                <td class="text-muted small">{{ r.via || '-' }}</td>
+                <td><span class="badge badge-secondary">{{ r.routeNo }}</span></td>
+                <td class="fw-bold text-dark">{{ r.routeName }}</td>
+                <td class="fw-semibold">{{ r.routeDistance }} km</td>
+                <td>
+                  <span
+                    class="badge"
+                    [ngClass]="r.status === 'Active' ? 'badge-success' : 'badge-danger'"
+                  >
+                    <i class="fas fa-circle me-1" style="font-size: 6px;"></i>
+                    {{ r.status }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <div class="d-flex justify-content-center gap-1">
+                    <button
+                      class="btn btn-sm btn-warning"
+                      (click)="openEditModal(r)"
+                      title="Edit Route Details"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button
+                      class="btn btn-sm btn-danger"
+                      (click)="confirmDeleteRoute(r)"
+                      title="Delete Route"
+                    >
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr *ngIf="routes.length === 0 && !isLoading">
+                <td colspan="10" class="text-center py-5 text-muted">
+                  <i class="fas fa-route fa-2x mb-3 text-secondary"></i>
+                  <p class="mb-0 fw-semibold">No vehicle routes configured yet</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Modern Loading State Overlay -->
+        <div class="modern-loading-backdrop" *ngIf="isLoading">
+          <div class="modern-spinner-card">
+            <div class="modern-spinner-ring"></div>
+            <span class="modern-spinnerText">Loading route details...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Route Details Modal (Add/Edit) -->
+  <div class="modal fade" id="formModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-route"></i>
+            <h5 class="modal-title">
+              {{ selectedRoute.id ? 'Edit Route Details' : 'Add New Route' }}
+            </h5>
+          </div>
+          <button type="button" class="close text-white" data-dismiss="modal" id="modalClose" aria-label="Close" style="background: none; border: none; font-size: 24px;">
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Route Number *</label>
+              <input
+                class="form-control"
+                placeholder="e.g. R-101"
+                [(ngModel)]="selectedRoute.routeNo"
+                required
+              />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Route Name *</label>
+              <input
+                class="form-control"
+                placeholder="e.g. Paltan Bazar to Jalukbari"
+                [(ngModel)]="selectedRoute.routeName"
+                required
+              />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Depot</label>
+              <input 
+                class="form-control" 
+                placeholder="e.g. Central Depot" 
+                [(ngModel)]="selectedRoute.depot" 
+              />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Start Point</label>
+              <input 
+                class="form-control" 
+                placeholder="e.g. ISBT" 
+                [(ngModel)]="selectedRoute.start" 
+              />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">End Point</label>
+              <input 
+                class="form-control" 
+                placeholder="e.g. Boragaon" 
+                [(ngModel)]="selectedRoute.end" 
+              />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Via Transit Locations</label>
+              <input 
+                class="form-control" 
+                placeholder="e.g. Six Mile, Ganeshguri" 
+                [(ngModel)]="selectedRoute.via" 
+              />
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Route Distance (KM)</label>
+              <input
+                type="number"
+                class="form-control"
+                placeholder="e.g. 15.5"
+                [(ngModel)]="selectedRoute.routeDistance"
+              />
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Depot → Start (KM)</label>
+              <input
+                type="number"
+                class="form-control"
+                placeholder="e.g. 2.0"
+                [(ngModel)]="selectedRoute.depot_to_start_distance"
+              />
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label class="form-label">End → Depot (KM)</label>
+              <input
+                type="number"
+                class="form-control"
+                placeholder="e.g. 2.5"
+                [(ngModel)]="selectedRoute.end_to_depot_distance"
+              />
+            </div>
+
+            <div class="col-md-12 mb-2">
+              <label class="form-label">Operational Status</label>
+              <select class="form-control" [(ngModel)]="selectedRoute.status">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">
+            Cancel
+          </button>
+
+          <button
+            *ngIf="!selectedRoute.id"
+            type="button"
+            class="btn btn-primary"
+            (click)="saveRoute()"
+          >
+            <i class="fas fa-check me-1"></i> Save Route
+          </button>
+
+          <button
+            *ngIf="selectedRoute.id"
+            type="button"
+            class="btn btn-success"
+            (click)="updateRoute()"
+          >
+            <i class="fas fa-save me-1"></i> Update Route
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modern Delete Confirmation Modal -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold text-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i> Confirm Route Deletion
+          </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="background: none; border: none; font-size: 24px;">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body py-4">
+          <p class="mb-0 text-secondary">
+            Are you sure you want to permanently delete route 
+            <strong class="text-dark">{{ routeToDelete?.routeName }} ({{ routeToDelete?.routeNo }})</strong>?
+            This action cannot be undone.
+          </p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" (click)="deleteRoute()">
+            <i class="fas fa-trash me-1"></i> Delete Route
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,427 @@
+<div class="content-wrapper">
+  <!-- Content Header -->
+  <div class="content-header">
+    <div class="container-fluid">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+          <h1 class="page-main-title">Driver & Operator Management</h1>
+          <p class="text-muted small mb-0 mt-1">
+            <i class="fas fa-id-card me-1 text-primary"></i>
+            Authorized municipal drivers, credentials & identification
+          </p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-default btn-sm shadow-sm" (click)="getDrivers()" title="Refresh List">
+            <i class="fas fa-sync-alt me-1"></i> Refresh
+          </button>
+          <button class="btn btn-outline-primary btn-sm shadow-sm" (click)="generatePDF()" title="Export Drivers Report as PDF">
+            <i class="fas fa-file-pdf me-1"></i> Generate Report
+          </button>
+          <button
+            class="btn btn-primary btn-sm shadow-sm"
+            data-toggle="modal"
+            data-target="#formModal"
+            (click)="openNewDriverDialog()"
+          >
+            <i class="fas fa-plus me-1"></i> Add New Driver
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <section class="content">
+    <div class="container-fluid">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-users text-primary"></i>
+            <span class="fw-bold text-dark">Driver Directory</span>
+          </div>
+
+          <div class="badge badge-primary">
+            {{ driverList?.length || 0 }} Registered Staff
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover table-striped">
+            <thead>
+              <tr>
+                <th width="50">#</th>
+                <th>Driver ID</th>
+                <th>Driver Name</th>
+                <th>Contact Number</th>
+                <th>License / ID</th>
+                <th>Photo</th>
+                <th width="140" class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let data of driverList; let i = index">
+                <td class="text-muted fw-bold">{{ i + 1 }}</td>
+                <td><span class="badge badge-secondary">{{ data.driver_id }}</span></td>
+                <td class="fw-bold text-dark">{{ data.driver_name }}</td>
+                <td class="fw-semibold">
+                  <i class="fas fa-phone-alt me-1 text-muted small"></i>
+                  {{ data.contact_no }}
+                </td>
+                <td><span class="text-muted small">{{ data.dl || data.aadhaar || '-' }}</span></td>
+                <td>
+                  <img
+                    *ngIf="data.photo"
+                    [src]="endpoint + '/docs/' + data.photo"
+                    alt="Driver Photo"
+                    class="rounded-circle shadow-sm"
+                    style="width: 34px; height: 34px; object-fit: cover; border: 1.5px solid #e2e8f0;"
+                  />
+                  <div
+                    *ngIf="!data.photo"
+                    class="rounded-circle bg-light d-flex align-items-center justify-content-center text-muted"
+                    style="width: 34px; height: 34px; border: 1.5px solid #e2e8f0; font-size: 11px;"
+                  >
+                    <i class="fas fa-user"></i>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <div class="d-flex justify-content-center gap-1">
+                    <button
+                      class="btn btn-sm btn-light"
+                      data-toggle="modal"
+                      data-target="#viewModal"
+                      (click)="viewDriverData(i)"
+                      title="View Details"
+                    >
+                      <i class="fas fa-eye text-primary"></i>
+                    </button>
+                    <button
+                      class="btn btn-sm btn-warning"
+                      data-toggle="modal"
+                      data-target="#formModal"
+                      (click)="openEditDriverDialog(data)"
+                      title="Edit Driver Record"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button
+                      class="btn btn-sm btn-danger"
+                      data-toggle="modal"
+                      data-target="#deleteDriverModal"
+                      (click)="openConfirmationDialog(data)"
+                      title="Delete Driver"
+                    >
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr *ngIf="!driverList || driverList.length === 0">
+                <td colspan="7" class="text-center py-5 text-muted">
+                  <i class="fas fa-user-slash fa-2x mb-3 text-secondary"></i>
+                  <p class="mb-0 fw-semibold">No drivers currently on record</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Driver Form Modal (Add / Edit) -->
+  <div class="modal fade" id="formModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-user-circle"></i>
+            <h5 class="modal-title">
+              {{ isEdit ? 'Update Driver Information' : 'Register New Driver' }}
+            </h5>
+          </div>
+          <button type="button" class="close text-white" (click)="closeForm()" data-dismiss="modal" aria-label="Close" style="background: none; border: none; font-size: 24px;">
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <form #driverForm="ngForm" novalidate (ngSubmit)="isEdit ? updateData() : saveData(driverForm)">
+            <div class="row g-3">
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-semibold">Driver Official ID <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="e.g. DRV-001"
+                  [(ngModel)]="form1.driver_id"
+                  name="driver_id"
+                  required
+                  #driverIdModel="ngModel"
+                  [class.is-invalid]="(driverIdModel.touched || driverForm.submitted) && driverIdModel.invalid"
+                />
+                <div class="invalid-feedback" *ngIf="(driverIdModel.touched || driverForm.submitted) && driverIdModel.errors?.['required']">
+                  Driver ID is required.
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-semibold">Driver Full Name <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Full name"
+                  [(ngModel)]="form1.driver_name"
+                  name="driver_name"
+                  required
+                  #driverNameModel="ngModel"
+                  [class.is-invalid]="(driverNameModel.touched || driverForm.submitted) && driverNameModel.invalid"
+                />
+                <div class="invalid-feedback" *ngIf="(driverNameModel.touched || driverForm.submitted) && driverNameModel.errors?.['required']">
+                  Driver Full Name is required.
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-semibold">Primary Contact Number <span class="text-danger">*</span></label>
+                <input
+                  type="tel"
+                  class="form-control"
+                  placeholder="10-digit mobile number"
+                  [(ngModel)]="form1.contact_no"
+                  name="contact_no"
+                  required
+                  pattern="^[0-9]{10}$"
+                  maxlength="10"
+                  #contactNoModel="ngModel"
+                  [class.is-invalid]="(contactNoModel.touched || driverForm.submitted) && contactNoModel.invalid"
+                />
+                <small class="form-text text-muted">Must be a unique 10-digit mobile number.</small>
+                <div class="invalid-feedback" *ngIf="(contactNoModel.touched || driverForm.submitted) && contactNoModel.errors?.['required']">
+                  Contact Number is required.
+                </div>
+                <div class="invalid-feedback" *ngIf="(contactNoModel.touched || driverForm.submitted) && contactNoModel.errors?.['pattern']">
+                  Must be exactly 10 digits (digits only).
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">AADHAAR Number</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="12-digit Aadhaar"
+                  [(ngModel)]="form1.aadhaar"
+                  name="aadhaar"
+                />
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">PAN Number</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="PAN alphanumeric"
+                  [(ngModel)]="form1.pan"
+                  name="pan"
+                />
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Voter ID</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Voter ID"
+                  [(ngModel)]="form1.voter"
+                  name="voter"
+                />
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Driving License Number</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="License number"
+                  [(ngModel)]="form1.dl"
+                  name="dl"
+                />
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Residential Address</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="City, locality, pin"
+                  [(ngModel)]="form1.address"
+                  name="address"
+                />
+              </div>
+
+              <div class="col-md-12 mb-3">
+                <label class="form-label">Driver Identification Photo</label>
+                <input
+                  type="file"
+                  class="form-control"
+                  accept="image/*"
+                  (change)="onPhotoChange($event)"
+                />
+              </div>
+
+              <div class="col-md-12 mb-2" *ngIf="imagePreview">
+                <label class="form-label d-block">Photo Preview</label>
+                <img
+                  [src]="imagePreview"
+                  class="rounded-3 shadow-sm"
+                  style="width: 110px; height: 110px; object-fit: cover; border: 2px solid #cbd5e1;"
+                  alt="Driver Preview"
+                />
+              </div>
+            </div>
+
+            <div class="modal-footer px-0 pb-0 mt-3 border-top">
+              <button
+                type="button"
+                (click)="closeForm()"
+                class="btn btn-default"
+                data-dismiss="modal"
+              >
+                Cancel
+              </button>
+
+              <button
+                *ngIf="!isEdit"
+                type="button"
+                class="btn btn-primary"
+                [disabled]="driverForm.invalid"
+                (click)="saveData(driverForm)"
+              >
+                <i class="fas fa-check me-1"></i> Register Driver
+              </button>
+
+              <button
+                *ngIf="isEdit"
+                type="button"
+                class="btn btn-success"
+                [disabled]="driverForm.invalid"
+                (click)="updateData()"
+              >
+                <i class="fas fa-save me-1"></i> Update Driver
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Driver Modal -->
+  <div class="modal fade" id="viewModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content" *ngIf="selectedData">
+        <div class="modal-header bg-light">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-user-circle text-primary"></i>
+            <h5 class="modal-title fw-bold text-dark">{{ selectedData.driver_name }}</h5>
+          </div>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="background: none; border: none; font-size: 24px;">
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row align-items-center">
+            <div class="col-sm-4 text-center mb-3 mb-sm-0">
+              <img
+                *ngIf="selectedData.photo"
+                [src]="endpoint + '/docs/' + selectedData.photo"
+                class="rounded-3 shadow-sm img-fluid"
+                style="max-height: 150px; object-fit: cover; border: 2px solid #e2e8f0;"
+                alt="Driver Photo"
+              />
+              <div
+                *ngIf="!selectedData.photo"
+                class="rounded-3 bg-light d-flex align-items-center justify-content-center text-muted mx-auto"
+                style="width: 120px; height: 140px; border: 2px solid #e2e8f0; font-size: 28px;"
+              >
+                <i class="fas fa-user"></i>
+              </div>
+            </div>
+
+            <div class="col-sm-8">
+              <table class="table table-borderless table-sm mb-0">
+                <tbody>
+                  <tr>
+                    <th class="text-muted" width="40%">Driver ID</th>
+                    <td class="fw-bold">{{ selectedData.driver_id }}</td>
+                  </tr>
+                  <tr>
+                    <th class="text-muted">Contact</th>
+                    <td class="fw-semibold">{{ selectedData.contact_no }}</td>
+                  </tr>
+                  <tr>
+                    <th class="text-muted">AADHAAR</th>
+                    <td>{{ selectedData.aadhaar || '-' }}</td>
+                  </tr>
+                  <tr>
+                    <th class="text-muted">PAN</th>
+                    <td>{{ selectedData.pan || '-' }}</td>
+                  </tr>
+                  <tr>
+                    <th class="text-muted">License</th>
+                    <td>{{ selectedData.dl || '-' }}</td>
+                  </tr>
+                  <tr>
+                    <th class="text-muted">Address</th>
+                    <td class="small">{{ selectedData.address || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal fade" id="deleteDriverModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold text-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i> Confirm Driver Removal
+          </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="background: none; border: none; font-size: 24px;">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body py-4">
+          <p class="mb-0 text-secondary">
+            Are you sure you want to remove driver 
+            <strong class="text-dark">{{ toBeDeletedDriverRecord?.driver_name }} ({{ toBeDeletedDriverRecord?.contact_no }})</strong>?
+          </p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            (click)="handleDeleteDriver()"
+            data-dismiss="modal"
+          >
+            <i class="fas fa-trash me-1"></i> Delete Driver
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

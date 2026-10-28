@@ -1,0 +1,28 @@
+# Ignore node_modules directory
+node_modules/
+
+# Angular cache
+.angular/
+
+# image folders file
+backend/image/CashCounter
+backend/image/closed_account
+backend/image/customer
+backend/image/user
+backend/image/vendor
+
+# Ignore log files
+*.log
+
+# Ignore environment variable files
+.env
+
+# Ignore OS generated files
+.DS_Store
+
+# Ignore build directories
+build/
+dist/
+frontend/out-tsc/
+out-tsc/
+

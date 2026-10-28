@@ -1,0 +1,574 @@
+<!-- Loading starts -->
+<div id="loading-wrapper" *ngIf="isLoading">
+  <ngx-spinner bdColor="rgba(15, 23, 42, 0.6)" size="medium" color="#6366f1" type="ball-clip-rotate"></ngx-spinner>
+</div>
+<!-- Loading ends -->
+<div class="content-wrapper">
+  <!-- Content Header (Page header) -->
+  <div class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1 class="m-0">Vehicle Log Sheet</h1>
+        </div>
+        <!-- /.col -->
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item active"><a href="#">Home</a></li>
+          </ol>
+        </div>
+        <!-- /.col -->
+      </div>
+      <!-- /.row -->
+    </div>
+    <!-- /.container-fluid -->
+  </div>
+  <!-- /.content-header -->
+
+  <!-- Main content -->
+  <section class="content card">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-lg-12 col-12">
+          <div class="d-flex justify-content-between p-3">
+            <div class="no-print">
+              <h3></h3>
+            </div>
+
+            <!-- Modal -->
+            <div
+              class="modal fade"
+              id="exampleModal"
+              tabindex="-1"
+              aria-labelledby="exampleModalLabel"
+              aria-hidden="true"
+            >
+              <div class="modal-dialog modal-dialog-centered modal-xl">
+                <div class="modal-content">
+                  <div class="modal-body">
+                    <button
+                      class="btn btn-danger"
+                      (click)="downloadPdf()"
+                      *ngIf="showPreview"
+                    >
+                      Download PDF
+                    </button>
+                    <!-- PRINT AREA -->
+                    <!-- EXACT A4 PRINT AREA -->
+                    <!-- PDF / PREVIEW TEMPLATE -->
+                    <div class="a4-wrapper" *ngIf="showPreview">
+                      <div id="printA4" class="pdf-page">
+                        <!-- <h2 class="text-center">Vehicle Log Sheet (Opening)</h2> -->
+
+                        <div class="row">
+                          <div class="sheet">
+                            <!-- Header -->
+                            <div class="pdf-header pb-3">
+                              <div class="left-logo-container">
+                                <span
+                                  ><img
+                                    src="../../../assets/image/login/icccgmc.png"
+                                    alt="Left Logo"
+                                    class="logo-left"
+                                /></span>
+                                <span
+                                  style="
+                                    font-size: 17px;
+                                    font-weight: bold;
+                                    font-family:
+                                      &quot;Times New Roman&quot;, Times;
+                                    margin-left: 1px;
+                                  "
+                                >
+                                  <b
+                                    >Integrated command and control center
+                                    GMC</b
+                                  >
+                                </span>
+                              </div>
+                            </div>
+
+                            <table class="tbl">
+                              <tr>
+                                <td style="width: 17%">LOG SHEET NO</td>
+                                <td colspan="5" class="text-start">
+                                  {{ form.timesheetNo }}
+                                </td>
+                              </tr>
+                              <tr>
+                                <th colspan="6" class="center">
+                                  VEHICLE LOG SHEET
+                                </th>
+                              </tr>
+
+                              <tr>
+                                <th>Depot Name</th>
+                                <th>Date</th>
+                                <th>Veh No</th>
+                                <th>Alloted Route No</th>
+                                <th>Alloted Route Name</th>
+                                <th>Time of Departure from Depot</th>
+                              </tr>
+                              <tr>
+                                <td>{{ form.routeDepot }}</td>
+                                <td>
+                                  {{ selectedDate | date: "dd/MM/yyyy" }}
+                                  <!-- {{ currentTinme | date : "hh:mm:ss a" }} -->
+                                </td>
+                                <td>{{ busDetails.vehicle_no }}</td>
+                                <td>{{ form.routeNo }}</td>
+                                <td>
+                                  {{ form.routeName }}
+                                </td>
+                                <td>
+                                  {{
+                                    formatTime(form.startTime)
+                                      | date: "hh:mm:ss a"
+                                  }}
+                                </td>
+                              </tr>
+
+                              <tr>
+                                <th>Driver ID</th>
+                                <th>Driver Name</th>
+                                <th>Driver Ph No</th>
+                                <th>Operator ID</th>
+                                <th>Operator Name</th>
+                                <th>Operator Ph No</th>
+                              </tr>
+                              <tr>
+                                <td>{{ busDetails.driver_id }}</td>
+                                <td>{{ busDetails.driverName }}</td>
+                                <td>{{ busDetails.driverContactNo }}</td>
+                                <td>{{ busDetails.operator_id }}</td>
+                                <td>{{ busDetails.operator_name }}</td>
+                                <td>{{ busDetails.contact_no }}</td>
+                              </tr>
+                            </table>
+
+                            <table class="tbl">
+                              <tr>
+                                <th>Driver License No.</th>
+                                <th>Expiry Date</th>
+                                <th>Operator License No.</th>
+                                <th>Expiry Date</th>
+                              </tr>
+                              <tr>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                              </tr>
+                            </table>
+
+                            <!-- SOC & Meter -->
+                            <table class="tbl">
+                              <tr>
+                                <th rowspan="2">Place</th>
+                                <th colspan="3">State of Charge</th>
+                                <th colspan="3">Meter Reading</th>
+                              </tr>
+                              <tr>
+                                <th>Opening Fuel</th>
+                                <th>Closing Fuel</th>
+                                <th>Consumed Fuel</th>
+                                <th>Opening KM</th>
+                                <th>Closing KM</th>
+                                <th>Covered KM</th>
+                              </tr>
+                              <tr>
+                                <td>{{ form.routeDepot }}</td>
+                                <td>{{ form.osoc || "" }}</td>
+                                <td>{{ form.csoc || "" }}</td>
+                                <td>{{ form.consumedSOC || "" }}</td>
+                                <td>{{ form.omr }}</td>
+                                <td>{{ form.cmr || "" }}</td>
+                                <td>{{ form.totalOperated || "" }}</td>
+                              </tr>
+                            </table>
+
+                            <!-- Remarks -->
+                            <table class="tbl">
+                              <tr>
+                                <th>REMARKS</th>
+                              </tr>
+                              <tr>
+                                <td style="height: 42px">
+                                  {{ form.remarks || "" }}
+                                </td>
+                              </tr>
+                            </table>
+
+                            <br />
+                            <br /><br />
+                            <!-- <br /> -->
+                            <!-- Signatures -->
+                            <!-- <table class="tbl no-border">
+                              <tr>
+                                <td class="center" style="width: 33%" style="font-size: 11px">
+                                  SIGNATURE OF THE CASHIER<br />
+                                  PM e-bus sewa<br />
+                                  Rupnagar, Guwahati-32
+                                </td>
+                                <td class="center" style="width: 33%" style="font-size: 11px">
+                                  SIGNATURE OF THE AUDITOR<br />
+                                  PM e-bus sewa<br />
+                                  Rupnagar, Guwahati-32
+                                </td>
+                                <td class="center" style="width: 33%" style="font-size: 11px">
+                                  SIGNATURE OF THE OPERATION MANAGER<br />
+                                  PM e-bus sewa<br />
+                                  Rupnagar, Guwahati-32
+                                </td>
+                              </tr>
+                            </table> -->
+                            <div class="footer-container-end">
+                              <span class="footer-container-end-text">
+                                Powered by -
+                              </span>
+                              <span class="footer-container-end-logo">
+                                <img
+                                  src="../../../assets/image/logo.png"
+                                  alt="Skaplink Logo"
+                                />
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- <div class="pdf-header py-3">
+                          <div class="sign-left">
+                            Outsider Skaplink technologies Pvt Ltd
+                          </div>
+
+                          <div class="sign-right">
+                            Cashier Skaplink technologies Pvt Ltd
+                          </div>
+                        </div>
+
+                        <h5>
+                          This is a computer-generated document. No signature is
+                          required
+                        </h5> -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-12 col-12 no-print">
+          <div class="d-flex justify-content-between p-3">
+            <div>
+              <h3>
+                <strong>Vehicle No: {{ busDetails.vehicle_no }}</strong>
+              </h3>
+            </div>
+            <div>
+              <h3>
+                <strong>Date: {{ selectedDate }}</strong>
+              </h3>
+            </div>
+          </div>
+
+          <div class="card p-3">
+            <div class="row">
+              <div class="col-md-6 pt-3">
+                <label>Route Name :</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="busDetails.routeName"
+                  name="busName"
+                  readonly
+                />
+              </div>
+
+              <div class="col-md-6 pt-3">
+                <label>Route No. :</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="form.routeNo"
+                  readonly
+                />
+              </div>
+
+              <div class="col-md-4 pt-3">
+                <label>Alloted to :</label>
+                <input 
+                type="text"
+                  class="form-control"
+                  name="Alloted to"
+                  readonly/>
+              </div>
+
+              <div class="col-md-4 pt-3">
+                <label>Timesheet No. :</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="form.timesheetNo"
+                  name="timesheetNo"
+                  readonly
+                />
+              </div>
+
+              <div class="col-md-4 pt-3">
+                <label>Start time. :</label>
+                <input
+                  type="time"
+                  class="form-control"
+                  [(ngModel)]="form.startTime"
+                  name="startTime"
+                  [readonly]="formtype === 'update'"
+                />
+              </div>
+
+              <div class="col-md-4 pt-3">
+                <label>OMR Opening Km :</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  [(ngModel)]="form.omr"
+                  (change)="calculateTotalOperated()"
+                  name="omr"
+                  [readonly]="formtype === 'update'"
+                />
+              </div>
+              <div class="col-md-4 pt-3" *ngIf="formtype == 'update'">
+                <label>CMR Closing Km :</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  [(ngModel)]="form.cmr"
+                  (change)="calculateTotalOperated()"
+                  name="cmr"
+                />
+              </div>
+              <div class="col-md-4 pt-3" *ngIf="formtype == 'update'">
+                <label>Total Km Operated :</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  [(ngModel)]="form.totalOperated"
+                  name="totalOperated"
+                  readonly
+                />
+              </div>
+
+              <div class="col-md-4 pt-3">
+                <label>Opening Fuel (L) :</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  [(ngModel)]="form.osoc"
+                  (change)="calculateTotalCosumed()"
+                  name="osoc"
+                  [readonly]="formtype === 'update'"
+                />
+              </div>
+              <div class="col-md-4 pt-3" *ngIf="formtype == 'update'">
+                <label>Closing Fuel (L) :</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  [(ngModel)]="form.csoc"
+                  (change)="calculateTotalCosumed()"
+                  name="csoc"
+                />
+              </div>
+              <div class="col-md-4 pt-3" *ngIf="formtype == 'update'">
+                <label>Consumed Fuel (L) :</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  [(ngModel)]="form.consumedSOC"
+                  name="consumedSOC"
+                  readonly
+                />
+              </div>
+
+              <div class="col-md-4 pt-3">
+                <label>Supervisor :</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="form.operatorName"
+                  name="operatorName"
+                  readonly
+                />
+              </div>
+
+              <div class="col-md-4 pt-3">
+                <label>Driver / Operator :</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="busDetails.driverName"
+                  name="driverName"
+                  readonly
+                />
+              </div>
+
+              <div class="col-md-4 pt-3" *ngIf="formtype == 'update'">
+                <label>Route Via :</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="busDetails.routeVia"
+                  name="routeVia"
+                  readonly
+                />
+              </div>
+
+              <div class="col-md-4 pt-3" *ngIf="formtype == 'update'">
+                <label>Route Depot :</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="busDetails.routeDepot"
+                  name="routeDepot"
+                  readonly
+                />
+              </div>
+
+              <div class="col-md-4 pt-3" *ngIf="formtype == 'update'">
+                <label>Route Name :</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="busDetails.routeName"
+                  name="routeName"
+                  readonly
+                />
+              </div>
+
+              <div class="col-md-4 pt-3" *ngIf="formtype == 'update'">
+                <label>Route Start :</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="busDetails.routeStart"
+                  name="routeStart"
+                  readonly
+                />
+              </div>
+
+              <div class="col-md-4 pt-3" *ngIf="formtype == 'update'">
+                <label>Route End :</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="busDetails.routeEnd"
+                  name="routeEnd"
+                  readonly
+                />
+              </div>
+
+              <div class="col-md-4 pt-3" *ngIf="formtype == 'update'">
+                <label>Stop time :</label>
+                <input
+                  type="time"
+                  class="form-control"
+                  [(ngModel)]="form.stopTime"
+                  name="stopTime"
+                />
+              </div>
+              <div class="col-md-4 pt-3">
+                <label>Status :</label>
+                <select
+                  class="form-control"
+                  [(ngModel)]="form.currentStatus"
+                  name="status"
+                >
+                  <option value="running">Running</option>
+                  <option value="still">Still (Breakdown)</option>
+                  <option value="idle">Idle</option>
+                  <option value="finished">Finished</option>
+                </select>
+              </div>
+
+              <div
+                class="col-md-4 pt-3"
+                *ngIf="form.currentStatus == 'still' && formtype == 'update'"
+              >
+                <label>Place of Breakdown :</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="form.placeOfBreakdown"
+                  name="placeOfBreakdown"
+                />
+              </div>
+
+              <div
+                class="col-md-4 pt-3"
+                *ngIf="form.currentStatus == 'still' && formtype == 'update'"
+              >
+                <label>Cause of Breakdown :</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="form.causeOfBreakdown"
+                  name="causeOfBreakdown"
+                />
+              </div>
+
+              <div class="col-md-4 pt-3">
+                <label>Remarks :</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="form.remarks"
+                  name="remarks"
+                />
+              </div>
+
+              <div class="col-md-12 pt-3">
+                <div class="text-center p-3">
+                  <button
+                    *ngIf="formtype == 'update'"
+                    class="btn btn-info mr-2"
+                    (click)="openPreview()"
+                    data-toggle="modal"
+                    data-target="#exampleModal"
+                  >
+                    Log Sheet Preview
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-success text-center"
+                    (click)="saveData()"
+                    [disabled]="isSaving"
+                    *ngIf="formtype !== 'update'"
+                  >
+                    <span *ngIf="!isSaving">Save</span>
+
+                    <span *ngIf="isSaving">
+                      <i class="fa fa-spinner fa-spin mr-2"></i> Saving...
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn btn-success text-center"
+                    (click)="updateAndDownload()"
+                    [disabled]="isSaving"
+                    *ngIf="formtype == 'update'"
+                  >
+                    <span *ngIf="!isSaving">Update and Complete Trip</span>
+                    <span *ngIf="isSaving">
+                      <i class="fa fa-spinner fa-spin mr-2"></i> Updating...
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

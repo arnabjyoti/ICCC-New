@@ -1,0 +1,36 @@
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f8fafc;
+  color: #1e293b;
+  position: relative;
+}
+
+.app-container--authenticated {
+  min-height: 100vh;
+}
+
+.app-main-viewport {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-main-viewport.with-layout {
+  margin-left: 260px;
+  padding-top: 52px;
+  background-color: #f8fafc;
+}
+
+.app-sidebar--collapsed .app-main-viewport.with-layout {
+  margin-left: 74px;
+}
+
+@media (max-width: 991.98px) {
+  .app-main-viewport.with-layout {
+    margin-left: 0 !important;
+  }
+}

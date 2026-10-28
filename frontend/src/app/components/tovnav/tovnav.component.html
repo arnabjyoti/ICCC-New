@@ -1,0 +1,158 @@
+<!-- Modern Top Header -->
+<header class="modern-header" [class.header-collapsed]="isCollapsed">
+  <div class="header-left">
+    <button class="sidebar-toggle-btn" (click)="toggleSidebar()" type="button" title="Toggle Navigation">
+      <i class="fas" [ngClass]="isCollapsed ? 'fa-indent' : 'fa-outdent'"></i>
+    </button>
+    
+    <div class="header-brand-badge d-none d-md-flex">
+      <span class="badge-status-dot"></span>
+      <span class="system-title">GMC Integrated Command & Control Center</span>
+    </div>
+  </div>
+
+  <!-- Search Bar -->
+  <div class="header-center">
+    <div class="search-wrapper">
+      <div class="search-input-box">
+        <i class="fas fa-search search-icon"></i>
+        <input 
+          type="text" 
+          placeholder="Search vehicles, routes, logs, modules..." 
+          class="modern-search-input"
+          [(ngModel)]="searchQuery"
+          (input)="onSearchInput($event)"
+          (focus)="onSearchFocus()"
+          (blur)="onSearchBlur()"
+          autocomplete="off"
+        />
+        <button *ngIf="searchQuery" class="search-clear-btn" (click)="clearSearch()" type="button">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Auto Suggestion Dropdown -->
+      <div class="modern-search-dropdown" *ngIf="showSuggestions">
+        <div class="suggestion-list" *ngIf="searchSuggestions.length > 0">
+          <div 
+            class="suggestion-row" 
+            *ngFor="let suggestion of searchSuggestions"
+            (mousedown)="onSuggestionClick(suggestion)"
+          >
+            <div class="suggestion-icon-wrap">
+              <i [class]="suggestion.icon"></i>
+            </div>
+            <div class="suggestion-meta">
+              <span class="suggestion-title">{{ suggestion.label }}</span>
+              <span class="suggestion-tag">{{ suggestion.type }}</span>
+            </div>
+            <i class="fas fa-arrow-right suggestion-arrow"></i>
+          </div>
+        </div>
+        <div class="no-suggestions" *ngIf="searchSuggestions.length === 0">
+          <i class="fas fa-search-minus mb-1"></i>
+          <span>No matches found for "{{ searchQuery }}"</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header Right Utilities -->
+  <div class="header-right">
+    <!-- Live Digital Clock -->
+    <div class="live-clock-badge d-none d-lg-flex">
+      <span class="pulse-indicator"></span>
+      <i class="far fa-clock clock-icon"></i>
+      <span class="clock-text">{{ myDate }}</span>
+    </div>
+
+    <!-- User Profile Chip -->
+    <div class="user-chip" *ngIf="user?.f_name">
+      <div class="user-avatar">
+        {{ (user?.f_name ? user.f_name.charAt(0) : 'U') | uppercase }}
+      </div>
+      <div class="user-info d-none d-sm-flex">
+        <span class="user-name">{{ user?.f_name | titlecase }} {{ user?.l_name | titlecase }}</span>
+        <span class="user-role">{{ (user?.role || 'Operator') | uppercase }}</span>
+      </div>
+    </div>
+
+    <!-- Sign Out Button -->
+    <button class="logout-action-btn" (click)="signout()" type="button" title="Sign Out">
+      <i class="fas fa-power-off"></i>
+    </button>
+  </div>
+</header>
+
+<!-- Mobile Overlay Backdrop -->
+<div class="sidebar-backdrop" *ngIf="!isCollapsed" (click)="toggleSidebar()"></div>
+
+<!-- Modern Command-Center Sidebar -->
+<aside class="modern-sidebar" [class.sidebar-collapsed]="isCollapsed">
+  <!-- Brand Area -->
+  <div class="sidebar-brand-box">
+    <a routerLink="/home" class="sidebar-brand-link">
+      <div class="brand-logo-wrap">
+        <img src="assets/image/login/icccgmc.png" alt="GMC Logo" class="brand-logo-img" />
+      </div>
+      <div class="brand-text-block" *ngIf="!isCollapsed">
+        <span class="brand-title">GMC</span>
+        <span class="brand-sub"><span class="brand-dash">—</span> <span class="brand-sub-italic">ICCC</span></span>
+      </div>
+    </a>
+  </div>
+
+  <!-- Navigation Menu -->
+  <div class="sidebar-scrollable-menu">
+    <div class="nav-section-title" *ngIf="!isCollapsed">MAIN NAVIGATION</div>
+
+    <ul class="modern-nav-list">
+      <li class="modern-nav-item" *ngFor="let item of menuItems">
+        <!-- Direct Menu Item (no children) -->
+        <a 
+          *ngIf="!item.children" 
+          [routerLink]="item.routerLink" 
+          routerLinkActive="active" 
+          class="modern-nav-link"
+          [title]="item.label"
+        >
+          <div class="nav-icon-wrap">
+            <i [class]="item.icon"></i>
+          </div>
+          <span class="nav-label-text" *ngIf="!isCollapsed">{{ item.label }}</span>
+        </a>
+
+        <!-- Parent Menu Item with Children (Collapsible submenu) -->
+        <div *ngIf="item.children" class="nav-parent-group" [class.submenu-open]="item.isOpen">
+          <a class="modern-nav-link has-submenu" (click)="toggleSubmenu(item)" [title]="item.label">
+            <div class="nav-icon-wrap">
+              <i [class]="item.icon"></i>
+            </div>
+            <span class="nav-label-text" *ngIf="!isCollapsed">{{ item.label }}</span>
+            <i class="fas fa-chevron-right submenu-arrow" *ngIf="!isCollapsed" [class.rotated]="item.isOpen"></i>
+          </a>
+
+          <ul class="modern-submenu" *ngIf="item.isOpen && !isCollapsed">
+            <li class="submenu-item" *ngFor="let child of item.children">
+              <a [routerLink]="child.routerLink" routerLinkActive="active" class="submenu-link">
+                <span class="submenu-bullet"></span>
+                <span>{{ child.label }}</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Sidebar Footer Widget -->
+  <div class="sidebar-bottom-status" *ngIf="!isCollapsed">
+    <div class="system-status-indicator">
+      <span class="system-online-dot"></span>
+      <div class="system-status-meta">
+        <span class="status-heading">System Active</span>
+        <span class="status-detail">ICCC Connected</span>
+      </div>
+    </div>
+  </div>
+</aside>

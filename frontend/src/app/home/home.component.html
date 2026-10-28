@@ -1,0 +1,323 @@
+<div class="content-wrapper" #mapWrapper>
+  <!-- Sub-Header Bar -->
+  <div class="map-sub-header">
+    <div class="sub-header-left">
+      <div class="d-flex align-items-center gap-2">
+        <i class="fa fa-map-marker-alt text-primary"></i>
+        <span class="sub-header-title">Live Tracking</span>
+      </div>
+
+      <!-- Fleet Quick Status Badges -->
+      <div class="fleet-status-pills">
+        <button
+          type="button"
+          class="status-pill status-pill-all"
+          [class.active]="statusFilter === 'all'"
+          (click)="setStatusFilter('all')"
+          title="Filter all vehicles"
+        >
+          <span class="pill-dot dot-all"></span>
+          <span>All</span>
+          <span class="pill-count">{{ totalCount }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="status-pill status-pill-moving"
+          [class.active]="statusFilter === 'moving'"
+          (click)="setStatusFilter('moving')"
+          title="Filter moving vehicles"
+        >
+          <span class="pill-dot dot-moving"></span>
+          <span>Moving</span>
+          <span class="pill-count">{{ movingCount }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="status-pill status-pill-stopped"
+          [class.active]="statusFilter === 'stopped'"
+          (click)="setStatusFilter('stopped')"
+          title="Filter stopped vehicles"
+        >
+          <span class="pill-dot dot-stopped"></span>
+          <span>Stopped</span>
+          <span class="pill-count">{{ stoppedCount }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Center: Interactive Search Bar & Instant Autocomplete Dropdown -->
+    <div class="map-search-center-wrap">
+      <div class="map-search-box">
+        <i class="fa fa-search search-icon"></i>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search Reg No, Box ID, Driver, Location..."
+          [(ngModel)]="searchQuery"
+          (input)="onSearchChange()"
+          (focus)="onSearchChange()"
+        />
+        <button
+          *ngIf="searchQuery"
+          type="button"
+          class="btn-clear-search"
+          (click)="clearSearch()"
+          title="Clear search"
+        >
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Autocomplete Dropdown List -->
+      <div
+        class="map-search-dropdown-card"
+        *ngIf="showSearchResults && searchQuery.trim().length > 0"
+      >
+        <div class="dropdown-header">
+          <span>Found <strong>{{ filteredVehicles.length }}</strong> matching vehicle(s)</span>
+          <button type="button" class="btn-close-dropdown" (click)="showSearchResults = false">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+
+        <div class="dropdown-results-scroll">
+          <div
+            *ngFor="let v of filteredVehicles"
+            class="dropdown-result-item"
+            (click)="selectAndFocusVehicle(v)"
+          >
+            <div class="result-item-main">
+              <div class="result-item-title-row">
+                <span class="result-veh-name">{{ v.VehName }}</span>
+                <span class="result-box-id">#{{ v.BoxId }}</span>
+                <span
+                  class="result-status-badge"
+                  [ngClass]="v.isMoving ? 'badge-moving' : 'badge-stopped'"
+                >
+                  <i class="fa" [ngClass]="v.isMoving ? 'fa-arrow-up' : 'fa-pause'"></i>
+                  {{ v.isMoving ? v.Speed + ' km/h' : 'Stopped' }}
+                </span>
+              </div>
+
+              <div class="result-details-row">
+                <span class="result-detail" *ngIf="v.driverName && v.driverName !== 'Not Assigned'">
+                  <i class="fa fa-user-tie"></i> {{ v.driverName }}
+                  <span *ngIf="v.driverContact" class="text-muted">({{ v.driverContact }})</span>
+                </span>
+                <span class="result-detail text-truncate" *ngIf="v.Location" [title]="v.Location">
+                  <i class="fa fa-map-pin"></i> {{ v.Location }}
+                </span>
+              </div>
+            </div>
+
+            <button type="button" class="btn-locate-result" title="Pinpoint and track on map">
+              <i class="fa fa-crosshairs"></i> Locate
+            </button>
+          </div>
+
+          <!-- Empty search result state -->
+          <div *ngIf="filteredVehicles.length === 0" class="dropdown-empty-state">
+            <i class="fa fa-search-minus fa-2x text-muted mb-2"></i>
+            <div>No vehicles found matching "<strong>{{ searchQuery }}</strong>"</div>
+            <small class="text-muted">Try searching by registration number, device ID, or driver name</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Map Controls & Drawer Toggle -->
+    <div class="sub-header-right">
+      <!-- Fit All Button -->
+      <button
+        type="button"
+        class="btn-sub-action"
+        (click)="fitAllVehicles()"
+        title="Fit all vehicles in view"
+      >
+        <i class="fa fa-compress-arrows-alt"></i>
+        <span class="d-none d-md-inline">Fit All</span>
+      </button>
+
+      <!-- Fleet List Drawer Toggle -->
+      <button
+        type="button"
+        class="btn-sub-action btn-fleet-toggle"
+        [class.active]="isDrawerOpen"
+        (click)="toggleFleetDrawer()"
+        title="Toggle Fleet Directory Drawer"
+      >
+        <i class="fa fa-list-ul"></i>
+        <span>Fleet</span>
+        <span class="badge-count">{{ totalCount }}</span>
+      </button>
+
+      <!-- Fullscreen Toggle Button -->
+      <button
+        class="btn-fullscreen-header"
+        (click)="toggleFullscreen()"
+        [title]="isFullscreen ? 'Exit Fullscreen' : 'Full Screen View'"
+      >
+        <i class="fas" [ngClass]="isFullscreen ? 'fa-compress-arrows-alt' : 'fa-expand-arrows-alt'"></i>
+        <span class="d-none d-md-inline">{{ isFullscreen ? 'Exit' : 'Full Screen' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Map Section -->
+  <section class="content p-0 position-relative">
+    <!-- Frosted Glass Card Loader -->
+    <div class="loader-backdrop" *ngIf="loading">
+      <div class="loader-card">
+        <div class="spinner"></div>
+        <p>Loading map and vehicles...</p>
+      </div>
+    </div>
+
+    <!-- Map Canvas -->
+    <div id="map"></div>
+
+    <!-- Top-Left Map Layer Switcher (Map / Satellite) -->
+    <div class="map-type-switcher">
+      <button [class.active]="activeLayer === 'streets'" (click)="switchLayer('streets')">Map</button>
+      <button [class.active]="activeLayer === 'satellite'" (click)="switchLayer('satellite')">Satellite</button>
+    </div>
+
+    <!-- Slide-out Fleet Directory Drawer -->
+    <aside class="map-fleet-drawer" [class.is-open]="isDrawerOpen">
+      <div class="drawer-header">
+        <div class="drawer-header-title">
+          <i class="fa fa-truck-moving text-primary"></i>
+          <span>Fleet Directory</span>
+          <span class="drawer-header-count">({{ filteredVehicles.length }}/{{ totalCount }})</span>
+        </div>
+        <button type="button" class="btn-close-drawer" (click)="closeFleetDrawer()">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Drawer Search & Status Bar -->
+      <div class="drawer-search-bar">
+        <div class="drawer-input-wrap">
+          <i class="fa fa-search"></i>
+          <input
+            type="text"
+            placeholder="Filter drawer list..."
+            [(ngModel)]="searchQuery"
+            (input)="filterVehicles()"
+          />
+          <button *ngIf="searchQuery" (click)="clearSearch()" class="btn-clear-inline">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+
+        <div class="drawer-status-tabs">
+          <button
+            type="button"
+            [class.active]="statusFilter === 'all'"
+            (click)="setStatusFilter('all')"
+          >
+            All ({{ totalCount }})
+          </button>
+          <button
+            type="button"
+            [class.active]="statusFilter === 'moving'"
+            (click)="setStatusFilter('moving')"
+            class="tab-moving"
+          >
+            Moving ({{ movingCount }})
+          </button>
+          <button
+            type="button"
+            [class.active]="statusFilter === 'stopped'"
+            (click)="setStatusFilter('stopped')"
+            class="tab-stopped"
+          >
+            Stopped ({{ stoppedCount }})
+          </button>
+        </div>
+      </div>
+
+      <!-- Drawer Fleet Cards List -->
+      <div class="drawer-cards-list">
+        <div
+          *ngFor="let veh of filteredVehicles"
+          class="fleet-card-item"
+          [class.is-selected]="highlightedVehicleId === veh.BoxId"
+          (click)="selectAndFocusVehicle(veh)"
+        >
+          <div class="fleet-card-header">
+            <div class="card-veh-info">
+              <span class="card-veh-name">{{ veh.VehName }}</span>
+              <span class="card-box-id">#{{ veh.BoxId }}</span>
+            </div>
+            <span
+              class="card-status-badge"
+              [ngClass]="veh.isMoving ? 'badge-moving' : 'badge-stopped'"
+            >
+              <i class="fa" [ngClass]="veh.isMoving ? 'fa-arrow-up' : 'fa-pause'"></i>
+              {{ veh.isMoving ? veh.Speed + ' km/h' : 'Stopped' }}
+            </span>
+          </div>
+
+          <div class="fleet-card-body">
+            <div class="card-info-row" *ngIf="veh.driverName && veh.driverName !== 'Not Assigned'">
+              <i class="fa fa-user-tie text-secondary"></i>
+              <span class="driver-text">{{ veh.driverName }}</span>
+              <a
+                *ngIf="veh.driverContact"
+                class="driver-tel-link"
+                [href]="'tel:' + veh.driverContact"
+                (click)="$event.stopPropagation()"
+                title="Call driver"
+              >
+                <i class="fa fa-phone-alt"></i> {{ veh.driverContact }}
+              </a>
+            </div>
+
+            <div class="card-info-row" *ngIf="veh.Location">
+              <i class="fa fa-map-pin text-danger"></i>
+              <span class="location-text text-truncate" [title]="veh.Location">{{ veh.Location }}</span>
+            </div>
+
+            <div class="card-info-row text-muted" *ngIf="veh.DDate">
+              <i class="fa fa-clock"></i>
+              <span class="time-text">{{ veh.DDate }}</span>
+            </div>
+          </div>
+
+          <div class="fleet-card-actions">
+            <button
+              type="button"
+              class="btn-card-action btn-card-locate"
+              (click)="selectAndFocusVehicle(veh); $event.stopPropagation()"
+            >
+              <i class="fa fa-crosshairs"></i> Track on Map
+            </button>
+            <a
+              class="btn-card-action btn-card-replay"
+              [href]="'/route-replay?veh=' + veh.BoxId"
+              (click)="$event.stopPropagation()"
+            >
+              <i class="fa fa-history"></i> Replay
+            </a>
+          </div>
+        </div>
+
+        <div *ngIf="filteredVehicles.length === 0" class="drawer-empty-state">
+          <i class="fa fa-car-crash fa-2x text-muted mb-2"></i>
+          <div>No vehicles match the selected criteria.</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Bottom-Right Watermark Badge -->
+    <div class="map-watermark">
+      <span>Developed by </span>
+      <a href="https://skaplinktechnologies.com" target="_blank" rel="noopener noreferrer">
+        SkaplinkTechnologies.com
+      </a>
+    </div>
+  </section>
+</div>

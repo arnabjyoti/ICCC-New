@@ -1,0 +1,196 @@
+<div class="content-wrapper">
+  <!-- Top Sub-Header Selection Bar -->
+  <div class="map-sub-header">
+    <div class="header-left">
+      <i class="fa fa-history text-primary"></i>
+      <span class="title">Vehicle Tracking &gt; Route Replay</span>
+    </div>
+
+    <!-- Vehicle & Date Selector Filters -->
+    <div class="header-controls">
+      <div class="control-group">
+        <label>Vehicle:</label>
+        <select 
+          class="form-select-sm" 
+          [(ngModel)]="selectedBoxId" 
+          (ngModelChange)="onRouteChange()"
+        >
+          <option value="" disabled>Select Vehicle</option>
+          <option 
+            *ngFor="let v of vehicleList; trackBy: trackByVehicle" 
+            [value]="v.BoxId"
+          >
+            {{ v.VehName }} ({{ v.VehicleStatus }})
+          </option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>Date:</label>
+        <input 
+          type="date" 
+          class="form-control-sm" 
+          [(ngModel)]="selectedDate" 
+          (ngModelChange)="onRouteChange()" 
+        />
+      </div>
+
+      <button 
+        class="btn btn-sm btn-primary" 
+        (click)="loadRouteHistory()" 
+        [disabled]="!selectedBoxId"
+      >
+        <i class="fa fa-play-circle"></i> Load Route
+      </button>
+
+      <!-- Vehicle Legend Button -->
+      <button 
+        class="btn btn-sm btn-outline-info" 
+        [class.active]="showLegend" 
+        (click)="toggleLegend()" 
+        title="Toggle Vehicle Legend"
+      >
+        Vehicle Legend
+      </button>
+
+      <!-- Fullscreen Toggle Button -->
+      <button 
+        class="btn-fullscreen-header" 
+        (click)="toggleFullscreen()" 
+        [title]="isFullscreen ? 'Exit Fullscreen' : 'Full Screen View'"
+      >
+        <i class="fas" [ngClass]="isFullscreen ? 'fa-compress-arrows-alt' : 'fa-expand-arrows-alt'"></i>
+        <span>{{ isFullscreen ? 'Exit Fullscreen' : 'Full Screen' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Map Container Section -->
+  <section class="content p-0 position-relative" #mapContainer>
+    
+    <!-- Top-Left Map Layer Switcher (Map / Satellite) -->
+    <div class="map-type-switcher">
+      <button [class.active]="activeLayer === 'streets'" (click)="switchLayer('streets')">Map</button>
+      <button [class.active]="activeLayer === 'satellite'" (click)="switchLayer('satellite')">Satellite</button>
+    </div>
+
+    <!-- Floating Exit Fullscreen Button (Shown only when Map is in Fullscreen) -->
+    <button 
+      class="map-floating-exit-btn" 
+      *ngIf="isFullscreen" 
+      (click)="toggleFullscreen()" 
+      title="Exit Full Screen View"
+    >
+      <i class="fas fa-compress-arrows-alt"></i>
+      <span>Exit Full Screen</span>
+    </button>
+
+    <!-- Floating Vehicle Legend Card -->
+    <div class="legend-card" *ngIf="showLegend">
+      <div class="legend-header">
+        <h6>Vehicle Legend</h6>
+        <button class="close-btn" (click)="showLegend = false">&times;</button>
+      </div>
+      <div class="legend-body">
+        <div class="legend-row">
+          <span class="dot moving"></span>
+          <span>Moving (Speed &gt; 0 km/h)</span>
+        </div>
+        <div class="legend-row">
+          <span class="dot stopped"></span>
+          <span>Stopped / Idle (0 km/h)</span>
+        </div>
+        <div class="legend-row">
+          <span class="dot unreachable"></span>
+          <span>Unreachable / Offline</span>
+        </div>
+        <div class="legend-row">
+          <span class="line full-path"></span>
+          <span>Planned Route Path</span>
+        </div>
+        <div class="legend-row">
+          <span class="line covered-path"></span>
+          <span>Traveled Route Path</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Video Player Controls -->
+    <div class="replay-floating-card" *ngIf="snappedPoints.length > 0">
+      <div class="card-header-bar">
+        <span>Play Route Replay</span>
+        <span class="playback-stats" *ngIf="activePoint">
+          <b>Speed:</b> {{ activePoint.Speed || 0 }} km/h | <b>Time:</b> {{ activePoint.Lastdate | date:'mediumTime' }}
+        </span>
+      </div>
+
+      <div class="player-controls">
+        <!-- Marker Focus / Follow Button -->
+        <button 
+          class="ctrl-btn" 
+          [class.active]="followVehicle" 
+          (click)="toggleFollow()" 
+          title="Follow / Center Marker"
+        >
+          <i class="fa fa-crosshairs"></i>
+        </button>
+
+        <!-- Slower Speed (-) -->
+        <button class="ctrl-btn" (click)="adjustSpeed(-1)" title="Slower (-)">
+          <i class="fa fa-minus"></i>
+        </button>
+
+        <!-- Rewind / Step Backward -->
+        <button class="ctrl-btn" (click)="stepBackward()" title="Rewind">
+          <i class="fa fa-backward"></i>
+        </button>
+
+        <!-- Play / Pause Button -->
+        <button class="ctrl-btn play-btn" (click)="togglePlay()" title="Play / Pause">
+          <i class="fa" [ngClass]="isPlaying ? 'fa-pause' : 'fa-play'"></i>
+        </button>
+
+        <!-- Fast Forward / Step Forward -->
+        <button class="ctrl-btn" (click)="stepForward()" title="Forward">
+          <i class="fa fa-forward"></i>
+        </button>
+
+        <!-- Faster Speed (+) -->
+        <button class="ctrl-btn" (click)="adjustSpeed(1)" title="Faster (+)">
+          <i class="fa fa-plus"></i>
+        </button>
+
+        <!-- Location Pin / Reset to Origin -->
+        <button class="ctrl-btn" (click)="resetReplay()" title="Go to Start Point">
+          <i class="fa fa-map-marker-alt"></i>
+        </button>
+
+        <!-- Multiplier Tag -->
+        <span class="speed-badge">{{ playbackMultiplier }}x</span>
+      </div>
+
+      <!-- Scrubber Timeline Slider -->
+      <div class="progress-timeline">
+        <input 
+          type="range" 
+          min="0" 
+          [max]="snappedPoints.length - 1" 
+          [value]="currentIndex" 
+          (input)="onSeek($event)" 
+          class="timeline-slider" 
+        />
+      </div>
+    </div>
+
+    <!-- Frosted Glass Card Loader -->
+    <div class="loader-backdrop" *ngIf="loading">
+      <div class="loader-card">
+        <div class="spinner"></div>
+        <p>{{ loadingText }}</p>
+      </div>
+    </div>
+
+    <!-- Map Canvas Element -->
+    <div id="replay-map"></div>
+  </section>
+</div>

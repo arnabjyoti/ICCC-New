@@ -1,0 +1,206 @@
+<div class="login-page-container">
+  <!-- Dynamic Background Overlay -->
+  <div class="login-bg-backdrop"></div>
+  <div class="login-grid-pattern"></div>
+
+  <div class="login-content-wrapper">
+    <div class="login-split-card">
+      <!-- Left Hero Banner -->
+      <div class="login-hero-panel">
+        <div class="hero-brand">
+          <div class="hero-logo-box">
+            <img src="assets/image/login/icccgmc.png" alt="GMC ICCC Logo" class="hero-logo" />
+          </div>
+          <div class="hero-brand-text">
+            <h2>GMC ICCC</h2>
+            <p>GUWAHATI MUNICIPAL CORPORATION</p>
+          </div>
+        </div>
+
+        <div class="hero-body">
+          <h1 class="hero-headline">
+            Integrated Command & Control Center
+          </h1>
+          <p class="hero-subtext">
+            Smart waste disposal monitoring, automated GPS route tracking, and municipal fleet operational intelligence.
+          </p>
+
+          <div class="hero-features-list">
+            <div class="feature-item">
+              <div class="feature-icon"><i class="fas fa-satellite"></i></div>
+              <div class="feature-detail">
+                <strong>Real-time Vehicle Tracking</strong>
+                <span>Continuous GPS & live route telemetry</span>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-icon"><i class="fas fa-route"></i></div>
+              <div class="feature-detail">
+                <strong>Route & Shift Dispatch</strong>
+                <span>Optimized coverage and waste collection logs</span>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+              <div class="feature-detail">
+                <strong>Secured Access Management</strong>
+                <span>Two-factor authorized staff verification</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-footer">
+          <span>&copy; 2026 Guwahati Municipal Corporation, Govt. of Assam</span>
+        </div>
+      </div>
+
+      <!-- Right Form Panel -->
+      <div class="login-form-panel">
+        <div class="form-header">
+          <div class="secure-badge">
+            <i class="fas fa-lock"></i>
+            <span>SECURE SYSTEM ACCESS</span>
+          </div>
+          <h2 class="form-title">Staff Sign In</h2>
+          <p class="form-desc">
+            Access the command center using your verified credentials.
+          </p>
+        </div>
+
+        <!-- Step 1: Email Form -->
+        <div class="login-step-form" *ngIf="!showOTPInput">
+          <div class="form-group-modern">
+            <label class="form-label-modern" for="emailInput">Authorized Email Address</label>
+            <div class="input-with-icon">
+              <i class="fas fa-envelope input-icon"></i>
+              <input 
+                type="email" 
+                id="emailInput"
+                class="form-input-modern" 
+                placeholder="name@gmc.gov.in" 
+                [(ngModel)]="inputData.email"
+                (keyup.enter)="sendOtp()"
+                [disabled]="isSendingOtp"
+                autocomplete="email"
+              />
+            </div>
+            <span class="input-hint">Use your registered GMC administrative email</span>
+          </div>
+
+          <button 
+            type="button" 
+            class="btn-primary-gradient btn-lg btn-block" 
+            (click)="sendOtp()" 
+            [disabled]="isSendingOtp || !inputData.email"
+          >
+            <span *ngIf="!isSendingOtp">
+              <i class="fas fa-paper-plane me-2"></i> Send Verification Passcode
+            </span>
+            <span *ngIf="isSendingOtp" class="d-flex align-items-center justify-content-center">
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Generating Passcode...
+            </span>
+          </button>
+        </div>
+
+        <!-- Step 2: OTP Verification Form -->
+        <div class="login-step-form" *ngIf="showOTPInput">
+          <div class="otp-prompt-box">
+            <div class="otp-email-chip">
+              <i class="fas fa-envelope-open-text me-2 text-primary"></i>
+              <span>Code sent to <strong>{{ inputData.email }}</strong></span>
+            </div>
+            <button class="btn-link-edit" (click)="changeEmail()">Change Email</button>
+          </div>
+
+          <div class="otp-inputs-grid">
+            <input 
+              type="text" 
+              class="otp-digit" 
+              maxlength="1" 
+              [(ngModel)]="OTP.otp11" 
+              #otp1 
+              (input)="focusNext($event, otp2, null)" 
+              autocomplete="one-time-code"
+            />
+            <input 
+              type="text" 
+              class="otp-digit" 
+              maxlength="1" 
+              [(ngModel)]="OTP.otp22" 
+              #otp2 
+              (input)="focusNext($event, otp3, otp1)" 
+            />
+            <input 
+              type="text" 
+              class="otp-digit" 
+              maxlength="1" 
+              [(ngModel)]="OTP.otp33" 
+              #otp3 
+              (input)="focusNext($event, otp4, otp2)" 
+            />
+            <input 
+              type="text" 
+              class="otp-digit" 
+              maxlength="1" 
+              [(ngModel)]="OTP.otp44" 
+              #otp4 
+              (input)="focusNext($event, otp5, otp3)" 
+            />
+            <input 
+              type="text" 
+              class="otp-digit" 
+              maxlength="1" 
+              [(ngModel)]="OTP.otp55" 
+              #otp5 
+              (input)="focusNext($event, otp6, otp4)" 
+            />
+            <input 
+              type="text" 
+              class="otp-digit" 
+              maxlength="1" 
+              [(ngModel)]="OTP.otp66" 
+              #otp6 
+              (input)="focusNext($event, null, otp5)"
+              (keyup.enter)="verifyOtpData()"
+            />
+          </div>
+
+          <div class="otp-action-row">
+            <button 
+              type="button" 
+              class="btn-primary-gradient btn-lg w-100 mb-2" 
+              (click)="verifyOtpData()" 
+              [disabled]="isVerifyingOtp"
+            >
+              <span *ngIf="!isVerifyingOtp">
+                <i class="fas fa-check-circle me-2"></i> Verify & Access Dashboard
+              </span>
+              <span *ngIf="isVerifyingOtp" class="d-flex align-items-center justify-content-center">
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Authenticating...
+              </span>
+            </button>
+
+            <button 
+              type="button" 
+              class="btn-subtle w-100" 
+              (click)="sendOtp()" 
+              [disabled]="isSendingOtp || isVerifyingOtp"
+            >
+              <i class="fas fa-redo-alt me-1"></i> Resend Verification Code
+            </button>
+          </div>
+        </div>
+
+        <div class="form-footer-info">
+          <i class="fas fa-info-circle me-1"></i>
+          <span>Authorized GMC personnel only. All access attempts are recorded.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,8 @@
+<div class="app-container" [class.app-container--authenticated]="isLoggedIn && showTopNav" [class.app-sidebar--collapsed]="isSidebarCollapsed">
+  <app-tovnav *ngIf="isLoggedIn && showTopNav"></app-tovnav>
+
+  <div class="app-main-viewport" [class.with-layout]="isLoggedIn && showTopNav">
+    <router-outlet></router-outlet>
+    <app-footer *ngIf="isLoggedIn && showTopNav"></app-footer>
+  </div>
+</div>

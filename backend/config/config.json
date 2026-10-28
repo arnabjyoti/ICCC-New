@@ -1,0 +1,56 @@
+{
+    "development": {
+      "username": "u476288869_iccc",
+      "password": "o@NJcYm9",
+      "database": "u476288869_iccc",
+      "host": "82.25.121.109",
+      "dialect": "mysql",
+        "dialectOptions": {
+          "timezone": "local"
+        },
+        "logging": false,
+        "timezone": "+05:30",
+        "operatorsAliases": false,
+        "FILE_UPLOAD_PATH": "D:\\Skaplink\\astcpmebusseva.com\\backend\\files",
+        "cert": {
+			"key": "./cert/temp/key.pem",
+			"crt": "./cert/temp/cert.pem"
+		}
+    },
+    "test": {
+      "username": "root",
+      "password": "",
+      "database": "astcEvBus",
+      "host": "localhost",
+        "dialect": "mysql",
+        "dialectOptions": {
+          "timezone": "local"
+        },
+        "logging": false,
+        "timezone": "+05:30",
+        "operatorsAliases": false,
+        "FILE_UPLOAD_PATH":"image",
+        "cert": {
+			"key": "./cert/temp/key.pem",
+			"crt": "./cert/temp/cert.pem"
+		}
+    },
+    "production": {
+        "username": "root",
+        "password": "",
+        "database": "astcpmebusseva",
+        "host": "localhost",
+        "dialect": "mysql",
+        "dialectOptions": {
+          "timezone": "local"
+        },
+        "logging": false,
+        "timezone": "+05:30",
+        "operatorsAliases": false,
+        "FILE_UPLOAD_PATH": "D:\\Skaplink\\astcpmebusseva.com\\backend\\files",
+        "cert": {
+			"key": "./cert/temp/key.pem",
+			"crt": "./cert/temp/cert.pem"
+		}
+    }
+}

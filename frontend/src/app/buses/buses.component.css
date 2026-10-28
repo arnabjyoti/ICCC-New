@@ -1,0 +1,31 @@
+.page-main-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.filter-bar {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.row-running {
+  background-color: rgba(16, 185, 129, 0.04) !important;
+}
+
+.row-still {
+  background-color: rgba(245, 158, 11, 0.04) !important;
+}
+
+.row-finished {
+  background-color: rgba(59, 130, 246, 0.04) !important;
+}
+
+.professional-table td,
+.professional-table th {
+  vertical-align: middle;
+}

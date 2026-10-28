@@ -1,0 +1,175 @@
+/* Content Wrapper & Page Header (Identical to Vehicle Master) */
+.content-wrapper {
+  background-color: #f8fafc;
+  min-height: calc(100vh - 84px);
+}
+
+.content-header {
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  margin-bottom: 10px;
+}
+
+.page-main-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.3px;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.btn-header-action {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+/* Stat Cards - Compact (Identical to Vehicle Master) */
+.stat-card {
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  background: #ffffff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.stat-card .icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 15px;
+}
+
+.stat-num {
+  font-size: 19px;
+  line-height: 1.1;
+}
+
+.stat-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Main Fleet Card */
+.fleet-card {
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  background: #ffffff;
+}
+
+/* Custom Nav Pills matching the system */
+.custom-fuel-tabs {
+  gap: 4px;
+}
+
+.custom-fuel-tabs .nav-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.custom-fuel-tabs .nav-link:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.custom-fuel-tabs .nav-link.active {
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+}
+
+/* Custom Table (Identical to Vehicle Master) */
+.table-responsive {
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.custom-fleet-table {
+  width: 100%;
+  margin-bottom: 0 !important;
+  font-size: 11.5px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.custom-fleet-table thead th {
+  background-color: #f1f5f9;
+  color: #475569;
+  font-weight: 700;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 6px 6px;
+  border-bottom: 1px solid #cbd5e1;
+  border-top: none;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.custom-fleet-table tbody td {
+  padding: 5px 6px;
+  vertical-align: middle;
+  border-top: 1px solid #f1f5f9;
+  color: #1e293b;
+  line-height: 1.25;
+}
+
+.custom-fleet-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.btn-xs {
+  padding: 2px 6px;
+  font-size: 10.5px;
+  line-height: 1.2;
+  border-radius: 4px;
+}
+
+/* Modal Backdrops & Cards (Light Theme) */
+.modal-backdrop-custom {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-card-custom {
+  width: 90%;
+  max-width: 500px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
