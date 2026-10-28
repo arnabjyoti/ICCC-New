@@ -19,7 +19,7 @@ const dailyUpdatesModel = require("../models").dailyUpdates;
 const vehicleMasterModel = require("../models").vehicleMaster;
 
 module.exports = {
-getBusList(req, res) {
+  getBusList(req, res) {
     const reqDate = req.query.date;
     let filterDate;
 
@@ -203,7 +203,7 @@ LIMIT 1;
     try {
       let data = req.body.requestObject;
       console.log("data", data);
-      
+
       data.status = "Active";
 
       // 1️⃣ Get last timesheetNo

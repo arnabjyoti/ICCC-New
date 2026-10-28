@@ -1,7 +1,10 @@
 const driverMasterModel = require("../models").driverMaster;
+const models = require("../models");
 const Op = require('sequelize').Op;
 const { sequelize } = require("../models");
 const { Sequelize, fn, literal } = require("sequelize");
+const bcrypt = require("bcrypt");
+const ensureDriverAppCredential = require("../services/ensureDriverAppCredential");
 
 const multer = require("multer");
 const fs = require("fs");
@@ -10,7 +13,7 @@ const env = process.env.NODE_ENV || "development";
 const config = require(__dirname + "/../config/config.json")[env];
 
 module.exports = {
-    upload_driver_image: multer({
+  upload_driver_image: multer({
     storage: multer.diskStorage({
       destination: (req, file, cb) => {
         const dest = path.join(config.FILE_UPLOAD_PATH, "image", "driver");
@@ -89,16 +92,12 @@ module.exports = {
         status: "Active",
         photo: req.file ? `image/driver/${req.file.filename}` : null,
       };
-      return driverMasterModel
-        .create(data)
-        .then((project) => {
-          console.log("hhhhhhhhhhhhhhh", project);
-          res.status(200).send({ message: "Success" });
-        })
-        .catch((err) => {
-          console.log("DB error:", err);
-          res.status(500).send({ message: "Database error" });
-        });
+      const pinHash = await bcrypt.hash("1234", 12);
+      await sequelize.transaction(async (transaction) => {
+        const driver = await driverMasterModel.create(data, { transaction });
+        await ensureDriverAppCredential(models, driver, transaction, pinHash);
+      });
+      return res.status(200).send({ message: "Success" });
     } catch (err) {
       console.log("Server error:", err);
       res.status(500).send({ message: "Server error" });
