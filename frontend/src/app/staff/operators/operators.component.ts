@@ -6,6 +6,7 @@ import { AppService } from 'src/app/app.service';
 import { environment } from 'src/environments/environment';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-operators',
@@ -41,6 +42,8 @@ export class OperatorsComponent {
   };
 
   operatorList: any[] = [];
+  filteredOperatorList: any[] = [];
+  searchText: string = '';
 
   ngOnInit(): void {
     this.getOperators();
@@ -223,6 +226,7 @@ export class OperatorsComponent {
     this.http.get(ENDPOINT).subscribe(
       (response: any) => {
         this.operatorList = response || [];
+        this.filterOperators();
       },
       (error) => {
         console.error(error);
@@ -230,6 +234,79 @@ export class OperatorsComponent {
       }
     );
   };
+
+  filterOperators(): void {
+    if (!this.searchText || !this.searchText.trim()) {
+      this.filteredOperatorList = [...(this.operatorList || [])];
+      return;
+    }
+    const q = this.searchText.trim().toLowerCase();
+    this.filteredOperatorList = (this.operatorList || []).filter((o: any) => {
+      return (
+        (o.operator_id && o.operator_id.toString().toLowerCase().includes(q)) ||
+        (o.operator_name && o.operator_name.toString().toLowerCase().includes(q)) ||
+        (o.designation && o.designation.toString().toLowerCase().includes(q)) ||
+        (o.contact_no && o.contact_no.toString().toLowerCase().includes(q)) ||
+        (o.license_no && o.license_no.toString().toLowerCase().includes(q)) ||
+        (o.aadhaar && o.aadhaar.toString().toLowerCase().includes(q)) ||
+        (o.pan && o.pan.toString().toLowerCase().includes(q)) ||
+        (o.voter && o.voter.toString().toLowerCase().includes(q)) ||
+        (o.address && o.address.toString().toLowerCase().includes(q)) ||
+        (o.status && o.status.toString().toLowerCase().includes(q))
+      );
+    });
+  }
+
+  clearSearch(): void {
+    this.searchText = '';
+    this.filterOperators();
+  }
+
+  exportToExcel(): void {
+    const listToExport = (this.searchText && this.searchText.trim()) ? this.filteredOperatorList : this.operatorList;
+    if (!listToExport || listToExport.length === 0) {
+      this.toastr.warning('No supervisor data available to export.', 'Warning');
+      return;
+    }
+
+    const excelRows = listToExport.map((item: any, index: number) => ({
+      '#': index + 1,
+      'Supervisor ID': item.operator_id || '-',
+      'Supervisor Name': item.operator_name || '-',
+      'Designation': item.designation || '-',
+      'Contact Number': item.contact_no || '-',
+      'License / ID': item.license_no || item.aadhaar || '-',
+      'Aadhaar': item.aadhaar || '-',
+      'PAN': item.pan || '-',
+      'Voter ID': item.voter || '-',
+      'Address': item.address || '-',
+      'Status': item.status || 'Active'
+    }));
+
+    const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(excelRows);
+
+    worksheet['!cols'] = [
+      { wch: 6 },
+      { wch: 16 },
+      { wch: 22 },
+      { wch: 20 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 32 },
+      { wch: 12 }
+    ];
+
+    const workbook: XLSX.WorkBook = {
+      Sheets: { 'Supervisors': worksheet },
+      SheetNames: ['Supervisors']
+    };
+
+    XLSX.writeFile(workbook, `GMC_Supervisor_Directory_${new Date().getTime()}.xlsx`);
+    this.toastr.success('Supervisor directory exported to Excel successfully!', 'Success');
+  }
 
   resetForm1() {
     this.form1 = {};
@@ -269,12 +346,17 @@ export class OperatorsComponent {
 
   selectedData: any;
 
-  viewOperatorData = (id: any) => {
-    this.selectedData = this.operatorList[id];
+  viewOperatorData = (dataOrIndex: any) => {
+    if (typeof dataOrIndex === 'number') {
+      this.selectedData = this.filteredOperatorList[dataOrIndex] || this.operatorList[dataOrIndex];
+    } else {
+      this.selectedData = dataOrIndex;
+    }
   };
 
   generatePDF(): void {
-    if (!this.operatorList || this.operatorList.length === 0) {
+    const listToExport = (this.searchText && this.searchText.trim()) ? this.filteredOperatorList : this.operatorList;
+    if (!listToExport || listToExport.length === 0) {
       this.toastr.warning('No supervisors found to generate report', 'Warning');
       return;
     }
@@ -292,7 +374,7 @@ export class OperatorsComponent {
       'Status'
     ]];
 
-    const rows = this.operatorList.map((o: any, index: number) => [
+    const rows = listToExport.map((o: any, index: number) => [
       index + 1,
       o.operator_id || '-',
       o.operator_name || '-',
@@ -307,7 +389,7 @@ export class OperatorsComponent {
     doc.text('GMC - Supervisor Directory Report', 14, 15);
     doc.setFontSize(9);
     doc.setTextColor(100);
-    doc.text(`Total Supervisors: ${this.operatorList.length}  |  Generated: ${new Date().toLocaleString()}`, 14, 22);
+    doc.text(`Total Supervisors: ${listToExport.length}  |  Generated: ${new Date().toLocaleString()}`, 14, 22);
 
     autoTable(doc, {
       head: headers,

@@ -3,9 +3,16 @@ const { sendMail, driverController, operatorController, vehicleController, vehic
 const AuthController = require('../controllers').AuthController;
 
 const travelHistoryController = require('../controllers/travelHistoryController');
+const Models = require('../models');
+const createDriverRouter = require('./driverApp');
 
 //Api's
 module.exports = (app) => {
+	// Driver Mobile App APIs
+	const driverRouter = createDriverRouter(Models);
+	app.use('/api', driverRouter);
+	app.use('/api/driver', driverRouter);
+
 	app.get('/api', (req, res) =>
 		res.status(200).send({
 			message: 'Welcome'
@@ -51,7 +58,8 @@ module.exports = (app) => {
 	// Fuel Management Routes
 	app.get('/api/getFuelSummary', fuelController.getFuelSummary);
 	app.get('/api/getFuelLogs', fuelController.getFuelLogs);
-	app.post('/api/saveFuelLog', fuelController.uploadReceipt, fuelController.saveFuelLog);
+	app.get('/api/getLastRefuelInfo', fuelController.getLastRefuelInfo);
+	app.post('/api/saveFuelLog', fuelController.uploadFuelImages, fuelController.saveFuelLog);
 	app.post('/api/deleteFuelLog', fuelController.deleteFuelLog);
 	app.get('/api/getFuelAlerts', fuelController.getFuelAlerts);
 	app.post('/api/resolveFuelAlert', fuelController.resolveFuelAlert);

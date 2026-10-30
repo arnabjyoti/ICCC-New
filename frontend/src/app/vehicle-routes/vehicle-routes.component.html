@@ -15,6 +15,9 @@
           <button class="btn btn-default btn-sm shadow-sm" (click)="getRoutes()" title="Refresh List">
             <i class="fas fa-sync-alt me-1"></i> Refresh
           </button>
+          <button class="btn btn-success btn-sm shadow-sm" (click)="exportToExcel()" title="Export Routes to Excel">
+            <i class="fas fa-file-excel me-1"></i> Export Excel
+          </button>
           <button class="btn btn-outline-primary btn-sm shadow-sm" (click)="generatePDF()" title="Export Routes Report as PDF">
             <i class="fas fa-file-pdf me-1"></i> Generate Report
           </button>
@@ -30,14 +33,39 @@
   <section class="content">
     <div class="container-fluid">
       <div class="card shadow-sm">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
           <div class="d-flex align-items-center gap-2">
             <i class="fas fa-map-signs text-primary"></i>
             <span class="fw-bold text-dark">Active Route Catalog</span>
           </div>
 
-          <div class="badge badge-primary">
-            {{ routes.length }} Total Routes
+          <div class="d-flex align-items-center gap-2">
+            <div class="input-group input-group-sm search-input-group" style="width: 260px">
+              <span class="input-group-text bg-light border-right-0">
+                <i class="fas fa-search text-muted"></i>
+              </span>
+              <input
+                type="text"
+                class="form-control border-left-0 border-right-0 bg-light"
+                placeholder="Search routes..."
+                [(ngModel)]="searchText"
+                (input)="filterRoutes()"
+                (keyup)="filterRoutes()"
+              />
+              <button 
+                *ngIf="searchText" 
+                class="btn btn-sm btn-light border-left-0" 
+                (click)="clearSearch()" 
+                type="button" 
+                title="Clear Search"
+              >
+                <i class="fas fa-times text-muted"></i>
+              </button>
+            </div>
+
+            <div class="badge badge-primary">
+              {{ filteredRoutes.length }} / {{ routes.length }} Routes
+            </div>
           </div>
         </div>
 
@@ -58,7 +86,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let r of routes; let i = index">
+              <tr *ngFor="let r of filteredRoutes; let i = index">
                 <td class="text-muted fw-bold">{{ i + 1 }}</td>
                 <td class="fw-semibold">{{ r.depot || '-' }}</td>
                 <td>{{ r.start || '-' }}</td>
@@ -96,10 +124,11 @@
                 </td>
               </tr>
 
-              <tr *ngIf="routes.length === 0 && !isLoading">
+              <tr *ngIf="(!filteredRoutes || filteredRoutes.length === 0) && !isLoading">
                 <td colspan="10" class="text-center py-5 text-muted">
                   <i class="fas fa-route fa-2x mb-3 text-secondary"></i>
-                  <p class="mb-0 fw-semibold">No vehicle routes configured yet</p>
+                  <p class="mb-0 fw-semibold" *ngIf="searchText">No routes found matching "{{ searchText }}"</p>
+                  <p class="mb-0 fw-semibold" *ngIf="!searchText">No vehicle routes configured yet</p>
                 </td>
               </tr>
             </tbody>

@@ -3,6 +3,7 @@ import { VehicleRoutesService } from './vehicle-routes.service';
 import { ToastrService } from 'ngx-toastr';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 declare var $: any;
 
@@ -13,6 +14,8 @@ declare var $: any;
 })
 export class VehicleRoutesComponent implements OnInit {
   routes: any[] = [];
+  filteredRoutes: any[] = [];
+  searchText: string = '';
   selectedRoute: any = {};
   routeToDelete: any = null;
   isLoading: boolean = false;
@@ -31,6 +34,7 @@ export class VehicleRoutesComponent implements OnInit {
     this.routeService.getVehicleRoutes().subscribe({
       next: (data: any) => {
         this.routes = data || [];
+        this.filterRoutes();
         this.isLoading = false;
       },
       error: (err) => {
@@ -38,6 +42,31 @@ export class VehicleRoutesComponent implements OnInit {
         this.toastr.error('Failed to fetch routes list.', 'Error');
       }
     });
+  }
+
+  filterRoutes(): void {
+    if (!this.searchText || !this.searchText.trim()) {
+      this.filteredRoutes = [...(this.routes || [])];
+      return;
+    }
+    const q = this.searchText.trim().toLowerCase();
+    this.filteredRoutes = (this.routes || []).filter((r: any) => {
+      return (
+        (r.routeNo && r.routeNo.toString().toLowerCase().includes(q)) ||
+        (r.routeName && r.routeName.toString().toLowerCase().includes(q)) ||
+        (r.depot && r.depot.toString().toLowerCase().includes(q)) ||
+        (r.start && r.start.toString().toLowerCase().includes(q)) ||
+        (r.end && r.end.toString().toLowerCase().includes(q)) ||
+        (r.via && r.via.toString().toLowerCase().includes(q)) ||
+        (r.routeDistance && r.routeDistance.toString().toLowerCase().includes(q)) ||
+        (r.status && r.status.toString().toLowerCase().includes(q))
+      );
+    });
+  }
+
+  clearSearch(): void {
+    this.searchText = '';
+    this.filterRoutes();
   }
 
   openAddModal(): void {
@@ -128,8 +157,55 @@ export class VehicleRoutesComponent implements OnInit {
     });
   }
 
+  exportToExcel(): void {
+    const listToExport = (this.searchText && this.searchText.trim()) ? this.filteredRoutes : this.routes;
+    if (!listToExport || listToExport.length === 0) {
+      this.toastr.warning('No routes data available to export.', 'Warning');
+      return;
+    }
+
+    const excelRows = listToExport.map((item: any, index: number) => ({
+      '#': index + 1,
+      'Route No': item.routeNo || '-',
+      'Route Name': item.routeName || '-',
+      'Depot': item.depot || '-',
+      'Start Point': item.start || '-',
+      'End Point': item.end || '-',
+      'Via Transit': item.via || '-',
+      'Route Distance (KM)': item.routeDistance ? `${item.routeDistance} km` : '-',
+      'Depot to Start (KM)': item.depot_to_start_distance ? `${item.depot_to_start_distance} km` : '-',
+      'End to Depot (KM)': item.end_to_depot_distance ? `${item.end_to_depot_distance} km` : '-',
+      'Status': item.status || 'Active'
+    }));
+
+    const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(excelRows);
+
+    worksheet['!cols'] = [
+      { wch: 6 },
+      { wch: 15 },
+      { wch: 26 },
+      { wch: 18 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 28 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 12 }
+    ];
+
+    const workbook: XLSX.WorkBook = {
+      Sheets: { 'Routes': worksheet },
+      SheetNames: ['Routes']
+    };
+
+    XLSX.writeFile(workbook, `GMC_Vehicle_Routes_${new Date().getTime()}.xlsx`);
+    this.toastr.success('Vehicle routes catalog exported to Excel successfully!', 'Success');
+  }
+
   generatePDF(): void {
-    if (!this.routes || this.routes.length === 0) {
+    const listToExport = (this.searchText && this.searchText.trim()) ? this.filteredRoutes : this.routes;
+    if (!listToExport || listToExport.length === 0) {
       this.toastr.warning('No routes found to generate report.', 'Warning');
       return;
     }
@@ -148,7 +224,7 @@ export class VehicleRoutesComponent implements OnInit {
       'Status'
     ]];
 
-    const rows = this.routes.map((r: any, index: number) => [
+    const rows = listToExport.map((r: any, index: number) => [
       index + 1,
       r.routeNo || '-',
       r.routeName || '-',
@@ -164,7 +240,7 @@ export class VehicleRoutesComponent implements OnInit {
     doc.text('GMC - Vehicle Pre-Fixed Routes Catalog Report', 14, 15);
     doc.setFontSize(9);
     doc.setTextColor(100);
-    doc.text(`Total Routes: ${this.routes.length}  |  Generated: ${new Date().toLocaleString()}`, 14, 22);
+    doc.text(`Total Routes: ${listToExport.length}  |  Generated: ${new Date().toLocaleString()}`, 14, 22);
 
     autoTable(doc, {
       head: headers,

@@ -20,6 +20,10 @@ module.exports = (sequelize, DataTypes) => {
         division: DataTypes.STRING,
 
         vehicle_type: DataTypes.STRING,
+        operates_on: {
+            type: DataTypes.STRING,
+            defaultValue: "Fuel"
+        },
         capacity: DataTypes.INTEGER,
         owner_name: DataTypes.STRING,
 

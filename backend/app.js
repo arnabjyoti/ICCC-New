@@ -26,7 +26,10 @@ app.use(logger('dev'));
 // Static folders
 if (config.FILE_UPLOAD_PATH) {
   app.use('/docs', express.static(config.FILE_UPLOAD_PATH));
+  app.use('/image', express.static(path.join(config.FILE_UPLOAD_PATH, 'image')));
 }
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/image', express.static(path.join(__dirname, 'uploads')));
 
 // Parse incoming requests data
 app.use(bodyParser.json());

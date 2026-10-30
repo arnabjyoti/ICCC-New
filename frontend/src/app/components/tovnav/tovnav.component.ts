@@ -101,9 +101,34 @@ export class TovnavComponent implements OnInit, OnDestroy {
     }
   };
 
+  get isFuelManager(): boolean {
+    const role = (this.user?.role || '').toString().toLowerCase().trim();
+    return role === 'fuel manager' || role === 'fuel_manager';
+  }
+
   // Initialize searchable data based on menu items and other entities
   initializeSearchData = () => {
     this.allSearchableItems = [];
+
+    if (this.isFuelManager) {
+      this.allSearchableItems = [
+        {
+          type: 'Module',
+          label: 'Fuel Management & Anti-Theft',
+          icon: 'fas fa-gas-pump',
+          routerLink: '/fuel-management',
+          keywords: 'fuel management diesel petrol refuel tank odometer',
+        },
+        {
+          type: 'Action',
+          label: 'Logout',
+          icon: 'fas fa-power-off',
+          action: 'logout',
+          keywords: 'logout sign out exit',
+        }
+      ];
+      return;
+    }
 
     if (this.menuItems) {
       this.menuItems.forEach((item: any) => {
@@ -236,6 +261,21 @@ export class TovnavComponent implements OnInit, OnDestroy {
   };
 
   sideMenu = (user: any) => {
+    const role = (user && user.role) ? user.role.toString().toLowerCase().trim() : '';
+
+    // Fuel Manager: Only show Fuel Management in sidebar
+    if (role === 'fuel manager' || role === 'fuel_manager') {
+      this.menuItems = [
+        {
+          label: 'Fuel Management',
+          icon: 'fas fa-gas-pump',
+          routerLink: '/fuel-management',
+        }
+      ];
+      this.initializeSearchData();
+      return;
+    }
+
     // Default / Operator role menu
     this.menuItems = [
       {

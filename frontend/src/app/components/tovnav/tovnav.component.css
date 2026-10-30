@@ -322,18 +322,38 @@
 }
 
 .logout-action-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  min-width: 32px;
+  max-width: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0 !important;
+  margin: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
   border: 1px solid #fee2e2;
   background: #fef2f2;
   color: #ef4444;
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 1;
   cursor: pointer;
+  flex-shrink: 0;
+  outline: none;
   transition: all 0.2s ease;
+}
+
+.logout-action-btn i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 13px;
+  margin: 0;
+  padding: 0;
 }
 
 .logout-action-btn:hover {

@@ -91,7 +91,7 @@
 <aside class="modern-sidebar" [class.sidebar-collapsed]="isCollapsed">
   <!-- Brand Area -->
   <div class="sidebar-brand-box">
-    <a routerLink="/home" class="sidebar-brand-link">
+    <a [routerLink]="isFuelManager ? '/fuel-management' : '/home'" class="sidebar-brand-link">
       <div class="brand-logo-wrap">
         <img src="assets/image/login/icccgmc.png" alt="GMC Logo" class="brand-logo-img" />
       </div>

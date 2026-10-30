@@ -15,7 +15,10 @@
           <button class="btn btn-default btn-sm shadow-sm btn-header-action" (click)="reloadDbVehicles()" title="Refresh List">
             <i class="fas fa-sync-alt me-1"></i> Refresh
           </button>
-          <button class="btn btn-primary btn-sm shadow-sm btn-header-action" (click)="generatePDF()">
+          <button class="btn btn-success btn-sm shadow-sm btn-header-action" (click)="exportToExcel()" title="Export Fleet to Excel">
+            <i class="fas fa-file-excel me-1"></i> Export Excel
+          </button>
+          <button class="btn btn-primary btn-sm shadow-sm btn-header-action" (click)="generatePDF()" title="Export Fleet to PDF">
             <i class="fas fa-file-pdf me-1"></i> Export PDF
           </button>
         </div>
@@ -26,10 +29,10 @@
   <!-- Main Content -->
   <section class="content px-3 pb-3 pt-0">
     <div class="container-fluid p-0">
-      <!-- 4 Operations Summary Stat Cards -->
+      <!-- 5 Operations Summary Stat Cards -->
       <div class="row g-2 mb-2">
         <!-- Total Vehicles -->
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl col-md-4 col-sm-6">
           <div class="card stat-card h-100 p-2 mb-0">
             <div class="d-flex justify-content-between align-items-center">
               <div>
@@ -45,7 +48,7 @@
         </div>
 
         <!-- Moving Vehicles -->
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl col-md-4 col-sm-6">
           <div class="card stat-card h-100 p-2 mb-0">
             <div class="d-flex justify-content-between align-items-center">
               <div>
@@ -61,11 +64,11 @@
         </div>
 
         <!-- Stopped Vehicles -->
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl col-md-4 col-sm-6">
           <div class="card stat-card h-100 p-2 mb-0">
             <div class="d-flex justify-content-between align-items-center">
               <div>
-                <span class="text-muted small fw-bold text-uppercase tracking-wider">Stopped / Idle</span>
+                <span class="text-muted small fw-bold text-uppercase tracking-wider">Stopped</span>
                 <h3 class="fw-bold mb-0 mt-1 text-warning stat-num">{{ stoppedVehicles }}</h3>
                 <span class="badge badge-warning mt-1 stat-badge">Stationary</span>
               </div>
@@ -76,8 +79,24 @@
           </div>
         </div>
 
+        <!-- Ignition On / Idle Vehicles -->
+        <div class="col-xl col-md-4 col-sm-6">
+          <div class="card stat-card h-100 p-2 mb-0">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="text-muted small fw-bold text-uppercase tracking-wider">Ignition On</span>
+                <h3 class="fw-bold mb-0 mt-1 text-info stat-num">{{ ignitionOnVehicles }}</h3>
+                <span class="badge badge-info mt-1 stat-badge">Engine Idle</span>
+              </div>
+              <div class="icon-box bg-info">
+                <i class="fas fa-key"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Unreachable Vehicles -->
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl col-md-4 col-sm-6">
           <div class="card stat-card h-100 p-2 mb-0">
             <div class="d-flex justify-content-between align-items-center">
               <div>
@@ -142,7 +161,8 @@
                 <th style="width: 32px;" class="text-center">#</th>
                 <th style="width: 80px;">Division</th>
                 <th style="width: 100px;">Vehicle No</th>
-                <th style="width: 80px;">Type</th>
+                <th style="width: 90px;">Type</th>
+                <th style="width: 85px;">Operates On</th>
                 <th style="width: 85px;">Supervisor</th>
                 <th style="width: 85px;">Driver</th>
                 <th style="width: 70px;">Box ID</th>
@@ -156,8 +176,8 @@
             </thead>
 
             <tbody>
-              <tr *ngFor="let v of filteredVehicles; let i = index; trackBy: trackByVehicle" [class.row-highlight-active]="v.justUpdated">
-                <td class="text-center text-muted fw-bold">{{ i + 1 }}</td>
+              <tr *ngFor="let v of paginatedVehicles; let i = index; trackBy: trackByVehicle" [class.row-highlight-active]="v.justUpdated">
+                <td class="text-center text-muted fw-bold">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
 
                 <!-- Division -->
                 <td>
@@ -174,6 +194,18 @@
 
                 <!-- Type -->
                 <td class="text-nowrap">{{ v.vehicle_type || "-" }}</td>
+
+                <!-- Operates On -->
+                <td class="text-nowrap">
+                  <span
+                    class="badge"
+                    [ngClass]="v.operates_on === 'EV' ? 'badge-info' : 'badge-light border'"
+                    style="font-size: 10px; padding: 2px 6px;"
+                  >
+                    <i [class]="v.operates_on === 'EV' ? 'fas fa-bolt text-warning me-1' : 'fas fa-gas-pump text-primary me-1'"></i>
+                    {{ v.operates_on || 'Fuel' }}
+                  </span>
+                </td>
 
                 <!-- Supervisor -->
                 <td class="text-truncate text-cell" [title]="v.operator_name || '-'">
@@ -204,6 +236,7 @@
                     [ngClass]="{
                       'badge-success': v.VehicleStatus === 'Moving',
                       'badge-danger': v.VehicleStatus === 'Stopped',
+                      'badge-info': v.VehicleStatus === 'IgnitionOn' || v.VehicleStatus === 'Idle',
                       'badge-secondary': v.VehicleStatus === 'Unreachable'
                     }"
                   >
@@ -253,13 +286,93 @@
               </tr>
 
               <tr *ngIf="filteredVehicles.length === 0 && !loading">
-                <td colspan="13" class="text-center py-4 text-muted">
+                <td colspan="14" class="text-center py-4 text-muted">
                   <i class="fas fa-search-minus fa-2x mb-2 text-secondary"></i>
                   <p class="mb-0 fw-semibold">No vehicles match the selected criteria</p>
                 </td>
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Table Pagination Footer -->
+        <div class="table-pagination-footer" *ngIf="filteredVehicles.length > 0">
+          <div class="pagination-info">
+            Showing <strong class="text-dark">{{ paginationStartIndex }}</strong> to <strong class="text-dark">{{ paginationEndIndex }}</strong> of <strong class="text-dark">{{ filteredVehicles.length }}</strong> vehicles
+            <span *ngIf="filteredVehicles.length !== vehicles.length" class="text-muted ms-1">(filtered from {{ vehicles.length }} total)</span>
+          </div>
+
+          <div class="pagination-controls-group">
+            <!-- Rows per page selector -->
+            <div class="page-size-selector">
+              <span>Rows per page:</span>
+              <select class="form-control form-control-sm page-size-select" [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+                <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+              </select>
+            </div>
+
+            <!-- Page Navigation Buttons -->
+            <ul class="pagination-nav">
+              <li>
+                <button 
+                  type="button" 
+                  class="page-btn" 
+                  (click)="goToPage(1)" 
+                  [disabled]="currentPage === 1"
+                  title="First Page"
+                >
+                  <i class="fas fa-angle-double-left"></i>
+                </button>
+              </li>
+              <li>
+                <button 
+                  type="button" 
+                  class="page-btn" 
+                  (click)="prevPage()" 
+                  [disabled]="currentPage === 1"
+                  title="Previous Page"
+                >
+                  <i class="fas fa-angle-left"></i>
+                </button>
+              </li>
+
+              <li *ngFor="let p of visiblePages">
+                <span *ngIf="p === '...'" class="page-ellipsis">...</span>
+                <button 
+                  *ngIf="p !== '...'" 
+                  type="button" 
+                  class="page-btn" 
+                  [class.active]="p === currentPage"
+                  (click)="goToPage(+p)"
+                >
+                  {{ p }}
+                </button>
+              </li>
+
+              <li>
+                <button 
+                  type="button" 
+                  class="page-btn" 
+                  (click)="nextPage()" 
+                  [disabled]="currentPage === totalPages"
+                  title="Next Page"
+                >
+                  <i class="fas fa-angle-right"></i>
+                </button>
+              </li>
+              <li>
+                <button 
+                  type="button" 
+                  class="page-btn" 
+                  (click)="goToPage(totalPages)" 
+                  [disabled]="currentPage === totalPages"
+                  title="Last Page"
+                >
+                  <i class="fas fa-angle-double-right"></i>
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <!-- Modern Loading State Overlay -->
@@ -321,18 +434,29 @@
               <label class="form-label">Vehicle Type *</label>
               <select class="form-control" [(ngModel)]="selectedVehicle.vehicle_type">
                 <option value="" disabled>Select Vehicle Type</option>
-                <option>Back Hoe Coader</option>
+                <option>Auto Mounted De Watering Pump</option>
+                <option>Backhoe loader</option>
+                <option>Compactor</option>
                 <option>Dumper</option>
+                <option>LMV</option>
                 <option>Mini Dumper</option>
+                <option>Mini Hopper Tripper</option>
+                <option>Mukti Vahan</option>
+                <option>Pickup Truck</option>
+                <option>Road Sweeping Machine</option>
+                <option>Skid Steer Loader</option>
+                <option>Super Sucker</option>
+                <option>Tractor</option>
                 <option>Water Sprinkler</option>
                 <option>Water Tanker</option>
-                <option>Road Sweeping Machine</option>
-                <option>Pickup Truck</option>
-                <option>Compactor</option>
-                <option>Tractor</option>
-                <option>Skid Steer Loader</option>
-                <option>Super Saucer</option>
-                <option>Mini Hopper Tripper</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Operates On *</label>
+              <select class="form-control" [(ngModel)]="selectedVehicle.operates_on">
+                <option value="Fuel">Fuel</option>
+                <option value="EV">EV</option>
               </select>
             </div>
 

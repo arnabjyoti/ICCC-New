@@ -15,6 +15,9 @@
           <button class="btn btn-default btn-sm shadow-sm btn-header-action" (click)="loadSummary(); loadLogs(); loadAlerts();" title="Refresh Data">
             <i class="fas fa-sync-alt me-1"></i> Refresh
           </button>
+          <button class="btn btn-success btn-sm shadow-sm btn-header-action" (click)="exportToExcel()" title="Export Fuel Records to Excel">
+            <i class="fas fa-file-excel me-1"></i> Export Excel
+          </button>
           <button class="btn btn-primary btn-sm shadow-sm btn-header-action" (click)="setTab('entry')" title="Record New Fuel Refill">
             <i class="fas fa-plus-circle me-1"></i> Log Refueling
           </button>
@@ -238,55 +241,97 @@
              TAB 2: REFUEL LOGBOOK & AUDITS
              ========================================== -->
         <div class="card-body p-0" *ngIf="activeTab === 'logs'">
-          <!-- Filter Toolbar -->
-          <div class="bg-light p-2 border-bottom d-flex flex-wrap align-items-center gap-2">
-            <div class="form-group mb-0">
-              <select [(ngModel)]="filterVehicleId" (change)="loadLogs()" class="form-control form-control-sm bg-white" style="width: 170px;">
-                <option value="">All Vehicles</option>
-                <option *ngFor="let v of vehicles" [value]="v.id">{{ v.vehicle_no }} ({{ v.vehicle_type }})</option>
-              </select>
+          <!-- Filter & Search Toolbar -->
+          <div class="bg-light p-2 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <!-- Live Search Bar -->
+              <div class="input-group input-group-sm" style="min-width: 240px; max-width: 320px;">
+                <div class="input-group-prepend">
+                  <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                </div>
+                <input 
+                  type="text" 
+                  [(ngModel)]="searchText" 
+                  (input)="filterLogs()" 
+                  placeholder="Search vehicle, driver, pump..." 
+                  class="form-control form-control-sm" 
+                />
+                <div class="input-group-append" *ngIf="searchText">
+                  <button class="btn btn-outline-secondary btn-sm" type="button" (click)="clearSearch()" title="Clear Search">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Vehicle Dropdown Filter -->
+              <div class="form-group mb-0">
+                <select [(ngModel)]="filterVehicleId" (change)="loadLogs()" class="form-control form-control-sm bg-white" style="width: 160px;">
+                  <option value="">All Vehicles</option>
+                  <option *ngFor="let v of vehicles" [value]="v.id">{{ v.vehicle_no }} ({{ v.vehicle_type }})</option>
+                </select>
+              </div>
+
+              <!-- Audit Status Filter -->
+              <div class="form-group mb-0">
+                <select [(ngModel)]="filterStatus" (change)="loadLogs()" class="form-control form-control-sm bg-white" style="width: 155px;">
+                  <option value="">All Audit Statuses</option>
+                  <option value="VERIFIED">Verified Only</option>
+                  <option value="FLAGGED_SUSPICIOUS">Flagged / Suspicious Only</option>
+                </select>
+              </div>
+
+              <!-- Date Filters -->
+              <div class="form-group mb-0">
+                <input type="date" [(ngModel)]="filterStartDate" (change)="loadLogs()" class="form-control form-control-sm bg-white" style="width: 135px;" title="Start Date" />
+              </div>
+
+              <div class="form-group mb-0">
+                <input type="date" [(ngModel)]="filterEndDate" (change)="loadLogs()" class="form-control form-control-sm bg-white" style="width: 135px;" title="End Date" />
+              </div>
+
+              <button class="btn btn-default btn-sm shadow-sm" (click)="filterVehicleId=''; filterStatus=''; filterStartDate=''; filterEndDate=''; searchText=''; loadLogs();" title="Reset All Filters">
+                <i class="fas fa-redo me-1"></i> Reset
+              </button>
             </div>
 
-            <div class="form-group mb-0">
-              <select [(ngModel)]="filterStatus" (change)="loadLogs()" class="form-control form-control-sm bg-white" style="width: 160px;">
-                <option value="">All Audit Statuses</option>
-                <option value="VERIFIED">Verified Only</option>
-                <option value="FLAGGED_SUSPICIOUS">Flagged / Suspicious Only</option>
-              </select>
-            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge badge-light border text-dark py-2 px-2" style="font-size: 11px;">
+                <i class="fas fa-list me-1 text-primary"></i>
+                <strong>{{ filteredFuelLogs.length }}</strong> of {{ fuelLogs.length }} Records
+              </span>
 
-            <div class="form-group mb-0">
-              <input type="date" [(ngModel)]="filterStartDate" (change)="loadLogs()" class="form-control form-control-sm bg-white" style="width: 140px;" />
+              <button class="btn btn-success btn-sm shadow-sm" (click)="exportToExcel()" title="Export Fuel Records to Excel">
+                <i class="fas fa-file-excel me-1"></i> Export Excel
+              </button>
             </div>
-
-            <div class="form-group mb-0">
-              <input type="date" [(ngModel)]="filterEndDate" (change)="loadLogs()" class="form-control form-control-sm bg-white" style="width: 140px;" />
-            </div>
-
-            <button class="btn btn-default btn-sm shadow-sm" (click)="filterVehicleId=''; filterStatus=''; filterStartDate=''; filterEndDate=''; loadLogs();">
-              <i class="fas fa-redo me-1"></i> Reset
-            </button>
           </div>
 
-          <!-- Logs Table -->
+          <!-- Logs Table with Separate Odometer & GPS Distance -->
           <div class="table-responsive">
             <table class="table table-hover table-striped table-sm custom-fleet-table mb-0">
               <thead>
                 <tr>
                   <th style="width: 32px;" class="text-center">#</th>
-                  <th style="width: 150px;">Date & Fuel Station</th>
-                  <th style="width: 110px;">Vehicle No</th>
-                  <th style="width: 90px;">Driver</th>
-                  <th style="width: 90px;">Liters Filled</th>
-                  <th style="width: 100px;">Rate & Cost</th>
-                  <th style="width: 100px;">GPS Distance</th>
-                  <th style="width: 120px;">Mileage (km/L)</th>
-                  <th style="width: 110px;">Audit Status</th>
+                  <th style="width: 145px;">Date & Fuel Station</th>
+                  <th style="width: 105px;">Vehicle No</th>
+                  <th style="width: 85px;">Driver</th>
+                  <th style="width: 85px;">Liters</th>
+                  <th style="width: 95px;">Rate & Cost</th>
+                  <!-- SEPARATE DISTANCES -->
+                  <th style="width: 110px;" title="Distance calculated from given odometer reading (Current - Previous)">
+                    <i class="fas fa-tachometer-alt text-secondary me-1"></i>Odometer Dist
+                  </th>
+                  <th style="width: 105px;" title="Distance tracked independently via vehicle GPS telemetry">
+                    <i class="fas fa-satellite text-primary me-1"></i>GPS Dist
+                  </th>
+                  <th style="width: 110px;">Mileage (km/L)</th>
+                  <th style="width: 100px;">Audit Status</th>
+                  <th style="width: 110px;">Entered By</th>
                   <th style="width: 75px;" class="text-center">Action</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let log of fuelLogs; let i = index" [class.table-danger]="log.audit_status === 'FLAGGED_SUSPICIOUS'">
+                <tr *ngFor="let log of filteredFuelLogs; let i = index" [class.table-danger]="log.audit_status === 'FLAGGED_SUSPICIOUS'">
                   <td class="text-center text-muted fw-bold">{{ i + 1 }}</td>
                   <td>
                     <strong class="text-dark d-block">{{ log.fill_date | date:'dd MMM yyyy, hh:mm a' }}</strong>
@@ -295,7 +340,7 @@
                   <td class="fw-bold text-dark text-nowrap">
                     {{ log.vehicle?.vehicle_no || 'N/A' }}
                   </td>
-                  <td class="text-truncate" style="max-width: 100px;" [title]="log.driver?.driver_name || '-'">
+                  <td class="text-truncate" style="max-width: 95px;" [title]="log.driver?.driver_name || '-'">
                     {{ log.driver?.driver_name || "-" }}
                   </td>
                   <td class="fw-bold text-primary">
@@ -305,16 +350,33 @@
                     <div class="fw-bold text-dark">₹{{ log.total_cost | number:'1.2-2' }}</div>
                     <span class="text-muted small">@ ₹{{ log.rate_per_liter }}/L</span>
                   </td>
+                  
+                  <!-- 1. ODOMETER DISTANCE (SEPARATE) -->
                   <td>
-                    <div *ngIf="log.gps_distance_km" class="fw-bold text-dark">
-                      {{ log.gps_distance_km }} km
-                      <span class="badge badge-light border ms-1">GPS</span>
+                    <div *ngIf="log.odometer_distance_km !== null && log.odometer_distance_km !== undefined" class="fw-bold text-dark">
+                      {{ log.odometer_distance_km }} km
                     </div>
-                    <div *ngIf="!log.gps_distance_km && log.odometer_km" class="text-muted">
-                      {{ log.odometer_km }} km <small>(Odo)</small>
+                    <div *ngIf="(log.odometer_distance_km === null || log.odometer_distance_km === undefined) && log.odometer_km && log.previous_odometer_km && log.odometer_km >= log.previous_odometer_km" class="fw-bold text-dark">
+                      {{ (log.odometer_km - log.previous_odometer_km) | number:'1.1-1' }} km
                     </div>
-                    <span *ngIf="!log.gps_distance_km && !log.odometer_km" class="text-muted">—</span>
+                    <div *ngIf="log.odometer_km" class="text-muted" style="font-size: 10px;">
+                      {{ log.previous_odometer_km ? (log.previous_odometer_km | number:'1.0-0') : '0' }} &rarr; {{ log.odometer_km | number:'1.0-0' }} km
+                    </div>
+                    <span *ngIf="!log.odometer_km && (log.odometer_distance_km === null || log.odometer_distance_km === undefined)" class="text-muted">—</span>
                   </td>
+
+                  <!-- 2. GPS DISTANCE (SEPARATE) -->
+                  <td>
+                    <div *ngIf="log.gps_distance_km !== null && log.gps_distance_km !== undefined && log.gps_distance_km > 0" class="fw-bold text-primary">
+                      {{ log.gps_distance_km }} km
+                      <span class="badge badge-light border ms-1" style="font-size: 9px;"><i class="fas fa-satellite text-primary"></i> GPS</span>
+                    </div>
+                    <span *ngIf="log.gps_distance_km === null || log.gps_distance_km === undefined || log.gps_distance_km <= 0" class="text-muted small">
+                      <i class="fas fa-satellite-dish text-muted me-1"></i>No GPS
+                    </span>
+                  </td>
+
+                  <!-- Mileage & Variance -->
                   <td>
                     <div *ngIf="log.calculated_mileage" class="d-flex align-items-center gap-1">
                       <strong [ngClass]="log.audit_status === 'FLAGGED_SUSPICIOUS' ? 'text-danger' : 'text-success'">
@@ -326,6 +388,8 @@
                     </div>
                     <span *ngIf="!log.calculated_mileage" class="text-muted">—</span>
                   </td>
+
+                  <!-- Audit Status -->
                   <td>
                     <span *ngIf="log.audit_status === 'VERIFIED'" class="badge badge-success">
                       <i class="fas fa-check-circle me-1"></i> Verified
@@ -334,19 +398,34 @@
                       <i class="fas fa-exclamation-triangle me-1"></i> Flagged
                     </span>
                   </td>
+
+                  <!-- Entered By -->
+                  <td>
+                    <span class="badge badge-light border text-dark" [title]="'Entered by: ' + (log.created_by || 'Admin')">
+                      <i class="fas fa-user-circle text-primary me-1"></i>
+                      <span class="text-truncate d-inline-block" style="max-width: 90px; vertical-align: middle;">
+                        {{ log.created_by || 'Admin' }}
+                      </span>
+                    </span>
+                  </td>
+
+                  <!-- Actions -->
                   <td class="text-center text-nowrap">
-                    <button *ngIf="log.receipt_image" class="btn btn-default btn-xs shadow-sm me-1" (click)="viewReceipt(log.receipt_image)" title="View Pump Receipt">
-                      <i class="fas fa-file-invoice text-primary"></i>
+                    <button *ngIf="log.odometer_image" class="btn btn-default btn-xs shadow-sm me-1 text-success" (click)="viewImageModal('Odometer Reading Proof - ' + (log.vehicle?.vehicle_no || ''), log.odometer_image, 'odometer')" title="View Odometer Photo">
+                      <i class="fas fa-tachometer-alt"></i>
+                    </button>
+                    <button *ngIf="log.receipt_image" class="btn btn-default btn-xs shadow-sm me-1 text-primary" (click)="viewImageModal('Fuel Pump Receipt - ' + (log.vehicle?.vehicle_no || ''), log.receipt_image, 'receipt')" title="View Pump Receipt">
+                      <i class="fas fa-file-invoice"></i>
                     </button>
                     <button class="btn btn-default btn-xs shadow-sm text-danger" (click)="deleteLog(log.id)" title="Delete Record">
                       <i class="fas fa-trash"></i>
                     </button>
                   </td>
                 </tr>
-                <tr *ngIf="fuelLogs.length === 0">
-                  <td colspan="10" class="text-center py-4 text-muted">
-                    <i class="fas fa-oil-can fa-2x mb-2 d-block text-muted"></i>
-                    No refueling records found matching the filter criteria.
+                <tr *ngIf="filteredFuelLogs.length === 0">
+                  <td colspan="12" class="text-center py-4 text-muted">
+                    <i class="fas fa-search fa-2x mb-2 d-block text-muted"></i>
+                    No refueling records found {{ searchText ? 'matching "' + searchText + '"' : 'matching the filter criteria' }}.
                   </td>
                 </tr>
               </tbody>
@@ -371,12 +450,33 @@
                 <!-- Vehicle Selection -->
                 <div class="col-md-6">
                   <label class="form-label small fw-bold text-dark">Select Vehicle <span class="text-danger">*</span></label>
-                  <select [(ngModel)]="newLog.vehicle_id" name="vehicle_id" required class="form-control form-control-sm">
+                  <select 
+                    [(ngModel)]="newLog.vehicle_id" 
+                    (change)="onVehicleSelect(newLog.vehicle_id)" 
+                    name="vehicle_id" 
+                    required 
+                    class="form-control form-control-sm"
+                    [class.is-invalid]="formSubmitted && !newLog.vehicle_id"
+                  >
                     <option value="" disabled selected>Select Vehicle</option>
                     <option *ngFor="let v of vehicles" [value]="v.id">
                       {{ v.vehicle_no }} — {{ v.vehicle_type || 'Fleet' }} (Tank: {{ v.tank_capacity || 150 }}L)
                     </option>
                   </select>
+                  <div *ngIf="selectedVehicleData" class="mt-1 d-flex flex-wrap gap-2 align-items-center">
+                    <span class="badge badge-light border text-dark" style="font-size: 11px;">
+                      <i class="fas fa-oil-can text-primary me-1"></i>Max Tank: <strong>{{ selectedVehicleData.tank_capacity || 150 }} L</strong>
+                    </span>
+                    <span class="badge badge-light border text-dark" style="font-size: 11px;">
+                      <i class="fas fa-tachometer-alt text-success me-1"></i>Benchmark: <strong>{{ selectedVehicleData.expected_mileage || 4.5 }} km/L</strong>
+                    </span>
+                    <button type="button" class="btn btn-outline-primary btn-xs py-0 px-2" (click)="editCalibration(selectedVehicleData)" title="Adjust Tank Capacity / Benchmark">
+                      <i class="fas fa-edit me-1"></i>Calibrate Tank
+                    </button>
+                    <span *ngIf="loadingVehicleInfo" class="text-muted small">
+                      <i class="fas fa-spinner fa-spin me-1"></i>Checking previous odometer...
+                    </span>
+                  </div>
                 </div>
 
                 <!-- Driver Selection -->
@@ -397,43 +497,66 @@
                 <!-- Liters Filled -->
                 <div class="col-md-4">
                   <label class="form-label small fw-bold text-dark">Liters Filled (L) <span class="text-danger">*</span></label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    [(ngModel)]="newLog.liters_filled" 
-                    (input)="onLitersOrRateChange()" 
-                    name="liters_filled" 
-                    placeholder="e.g. 55.4" 
-                    required 
-                    class="form-control form-control-sm" 
-                  />
+                  <div class="input-group input-group-sm custom-input-group">
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      [(ngModel)]="newLog.liters_filled" 
+                      (input)="onLitersOrRateChange()" 
+                      name="liters_filled" 
+                      placeholder="e.g. 55.4" 
+                      required 
+                      class="form-control form-control-sm"
+                      [class.is-invalid]="(formSubmitted && (!newLog.liters_filled || newLog.liters_filled <= 0)) || (selectedVehicleData?.tank_capacity && newLog.liters_filled > (selectedVehicleData?.tank_capacity || 150))" 
+                    />
+                    <div class="input-group-append">
+                      <span class="input-group-text">L</span>
+                    </div>
+                  </div>
+                  <!-- Real-time Warning if Liters Filled > Tank Capacity -->
+                  <div *ngIf="selectedVehicleData && newLog.liters_filled && newLog.liters_filled > (selectedVehicleData.tank_capacity || 150)" class="text-danger small fw-bold mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>Liters filled cannot exceed tank capacity ({{ selectedVehicleData.tank_capacity || 150 }} L)!
+                  </div>
+                  <small *ngIf="!(selectedVehicleData && newLog.liters_filled && newLog.liters_filled > (selectedVehicleData.tank_capacity || 150))" class="text-muted" style="font-size: 11px;">
+                    Tank Capacity: {{ selectedVehicleData?.tank_capacity || 150 }} Liters
+                  </small>
                 </div>
 
                 <!-- Rate per Liter -->
                 <div class="col-md-4">
                   <label class="form-label small fw-bold text-dark">Rate Per Liter (₹) <span class="text-danger">*</span></label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    [(ngModel)]="newLog.rate_per_liter" 
-                    (input)="onLitersOrRateChange()" 
-                    name="rate_per_liter" 
-                    placeholder="92.50" 
-                    required 
-                    class="form-control form-control-sm" 
-                  />
+                  <div class="input-group input-group-sm custom-input-group">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text">₹</span>
+                    </div>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      [(ngModel)]="newLog.rate_per_liter" 
+                      (input)="onLitersOrRateChange()" 
+                      name="rate_per_liter" 
+                      placeholder="92.50" 
+                      required 
+                      class="form-control form-control-sm" 
+                    />
+                  </div>
                 </div>
 
                 <!-- Total Amount Paid -->
                 <div class="col-md-4">
                   <label class="form-label small fw-bold text-dark">Total Amount Paid (₹)</label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    [(ngModel)]="newLog.total_cost" 
-                    name="total_cost" 
-                    class="form-control form-control-sm fw-bold bg-light" 
-                  />
+                  <div class="input-group input-group-sm custom-input-group">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text">₹</span>
+                    </div>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      [(ngModel)]="newLog.total_cost" 
+                      name="total_cost" 
+                      class="form-control form-control-sm fw-bold bg-light" 
+                    />
+                  </div>
                   <small class="text-muted" style="font-size: 11px;">Auto-computed: Liters × Rate</small>
                 </div>
 
@@ -449,29 +572,127 @@
                   />
                 </div>
 
-                <!-- Odometer Reading -->
+                <!-- Odometer Reading (km) -->
                 <div class="col-md-4">
-                  <label class="form-label small fw-bold text-dark">Current Odometer (km)</label>
-                  <input 
-                    type="number" 
-                    step="0.1" 
-                    [(ngModel)]="newLog.odometer_km" 
-                    name="odometer_km" 
-                    placeholder="e.g. 45280" 
-                    class="form-control form-control-sm" 
-                  />
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label small fw-bold text-dark mb-0">
+                      Current Odometer (km) <span class="text-danger">*</span>
+                    </label>
+                    <span *ngIf="selectedVehicleLastOdo !== null" class="badge badge-light border text-dark" style="font-size: 10px;">
+                      Prev: <strong>{{ selectedVehicleLastOdo | number:'1.0-1' }} km</strong>
+                    </span>
+                  </div>
+                  <div class="input-group input-group-sm custom-input-group">
+                    <input 
+                      type="number" 
+                      step="0.1" 
+                      [(ngModel)]="newLog.odometer_km" 
+                      name="odometer_km" 
+                      placeholder="e.g. 45280" 
+                      required
+                      class="form-control form-control-sm"
+                      [class.is-invalid]="(formSubmitted && (newLog.odometer_km === null || newLog.odometer_km === '')) || (selectedVehicleLastOdo !== null && newLog.odometer_km !== null && newLog.odometer_km !== '' && newLog.odometer_km < selectedVehicleLastOdo)" 
+                    />
+                    <div class="input-group-append">
+                      <span class="input-group-text">km</span>
+                    </div>
+                  </div>
+                  <!-- Real-time Warning if Current Odometer < Previous Odometer -->
+                  <div *ngIf="selectedVehicleLastOdo !== null && newLog.odometer_km !== null && newLog.odometer_km !== '' && newLog.odometer_km < selectedVehicleLastOdo" class="text-danger small fw-bold mt-1">
+                    <i class="fas fa-times-circle me-1"></i>Cannot be lower than previous odometer ({{ selectedVehicleLastOdo | number:'1.0-1' }} km)!
+                  </div>
+                  <div *ngIf="selectedVehicleLastOdo !== null && newLog.odometer_km !== null && newLog.odometer_km !== '' && newLog.odometer_km >= selectedVehicleLastOdo" class="text-success small fw-semibold mt-1">
+                    <i class="fas fa-arrow-up me-1"></i>+{{ (newLog.odometer_km - selectedVehicleLastOdo) | number:'1.0-1' }} km since last refill
+                  </div>
+                  <small *ngIf="selectedVehicleLastOdo === null && !loadingVehicleInfo" class="text-muted" style="font-size: 11px;">
+                    First recorded refill for this vehicle
+                  </small>
                 </div>
 
-                <!-- Bill Receipt Photo -->
+                <!-- Mandatory Odometer Photo -->
                 <div class="col-md-6">
-                  <label class="form-label small fw-bold text-dark">Upload Receipt / Slip Photo</label>
-                  <input type="file" (change)="onFileSelected($event)" accept="image/*" class="form-control form-control-sm" />
+                  <label class="form-label small fw-bold text-dark d-flex justify-content-between align-items-center mb-1">
+                    <span>
+                      <i class="fas fa-tachometer-alt text-primary me-1"></i>
+                      Odometer Display Photo <span class="text-danger">*</span>
+                    </span>
+                    <span class="badge badge-danger" style="font-size: 9.5px; letter-spacing: 0.5px;">MANDATORY PROOF</span>
+                  </label>
+                  <div class="input-group input-group-sm">
+                    <input 
+                      type="file" 
+                      id="odometerFileInput"
+                      (change)="onOdometerFileSelected($event)" 
+                      accept="image/*" 
+                      class="form-control form-control-sm"
+                      [class.is-invalid]="formSubmitted && !selectedOdometerFile"
+                    />
+                    <div class="input-group-append" *ngIf="selectedOdometerFile">
+                      <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeOdometerFile()" title="Remove Odometer Photo">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div *ngIf="formSubmitted && !selectedOdometerFile" class="text-danger small fw-bold mt-1">
+                    <i class="fas fa-exclamation-circle me-1"></i>Odometer photo proof is mandatory.
+                  </div>
+                  <small *ngIf="!odometerPreviewUrl" class="text-muted d-block mt-1" style="font-size: 11px;">
+                    Clear dashboard photo verifying the odometer reading at the fuel pump.
+                  </small>
+
+                  <!-- Preview Card -->
+                  <div *ngIf="odometerPreviewUrl" class="mt-2 p-2 rounded bg-light border d-flex align-items-center gap-2">
+                    <img [src]="odometerPreviewUrl" alt="Odometer Preview" class="rounded border shadow-sm" style="width: 58px; height: 46px; object-fit: cover;" />
+                    <div class="small flex-grow-1 text-truncate">
+                      <strong class="text-dark d-block text-truncate">{{ selectedOdometerFile?.name }}</strong>
+                      <span class="text-muted" style="font-size: 11px;">{{ (selectedOdometerFile?.size || 0) / 1024 | number:'1.0-1' }} KB • Odometer Proof</span>
+                    </div>
+                    <span class="badge badge-success px-2 py-1"><i class="fas fa-check me-1"></i>Attached</span>
+                  </div>
+                </div>
+
+                <!-- Pump Receipt / Slip Photo (Optional) -->
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold text-dark d-flex justify-content-between align-items-center mb-1">
+                    <span>
+                      <i class="fas fa-file-invoice text-info me-1"></i>
+                      Pump Receipt / Slip Photo
+                    </span>
+                    <span class="badge badge-light border text-muted" style="font-size: 9.5px;">OPTIONAL</span>
+                  </label>
+                  <div class="input-group input-group-sm">
+                    <input 
+                      type="file" 
+                      id="receiptFileInput"
+                      (change)="onReceiptFileSelected($event)" 
+                      accept="image/*" 
+                      class="form-control form-control-sm" 
+                    />
+                    <div class="input-group-append" *ngIf="selectedFile">
+                      <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeReceiptFile()" title="Remove Receipt Photo">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <small *ngIf="!receiptPreviewUrl" class="text-muted d-block mt-1" style="font-size: 11px;">
+                    Optional fuel dispenser bill slip or payment voucher.
+                  </small>
+
+                  <!-- Preview Card -->
+                  <div *ngIf="receiptPreviewUrl" class="mt-2 p-2 rounded bg-light border d-flex align-items-center gap-2">
+                    <img [src]="receiptPreviewUrl" alt="Receipt Preview" class="rounded border shadow-sm" style="width: 58px; height: 46px; object-fit: cover;" />
+                    <div class="small flex-grow-1 text-truncate">
+                      <strong class="text-dark d-block text-truncate">{{ selectedFile?.name }}</strong>
+                      <span class="text-muted" style="font-size: 11px;">{{ (selectedFile?.size || 0) / 1024 | number:'1.0-1' }} KB • Receipt</span>
+                    </div>
+                    <span class="badge badge-info px-2 py-1"><i class="fas fa-check me-1"></i>Attached</span>
+                  </div>
                 </div>
 
                 <!-- Remarks -->
-                <div class="col-md-6">
+                <div class="col-12">
                   <label class="form-label small fw-bold text-dark">Remarks / Notes</label>
-                  <input type="text" [(ngModel)]="newLog.remarks" name="remarks" placeholder="Optional notes" class="form-control form-control-sm" />
+                  <input type="text" [(ngModel)]="newLog.remarks" name="remarks" placeholder="Optional notes (e.g. full tank refill, highway journey)" class="form-control form-control-sm" />
                 </div>
               </div>
 
@@ -552,6 +773,34 @@
              TAB 5: VEHICLE TANK CALIBRATION
              ========================================== -->
         <div class="card-body p-0" *ngIf="activeTab === 'calibration'">
+          <!-- Search Toolbar for Vehicles -->
+          <div class="bg-light p-2 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="input-group input-group-sm" style="min-width: 240px; max-width: 320px;">
+              <div class="input-group-prepend">
+                <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+              </div>
+              <input 
+                type="text" 
+                [(ngModel)]="searchCalibrationText" 
+                (input)="filterCalibration()" 
+                placeholder="Search vehicle reg no, box ID, fuel..." 
+                class="form-control form-control-sm" 
+              />
+              <div class="input-group-append" *ngIf="searchCalibrationText">
+                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="clearCalibrationSearch()" title="Clear Search">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge badge-light border text-dark py-2 px-2" style="font-size: 11px;">
+                <i class="fas fa-truck me-1 text-primary"></i>
+                <strong>{{ filteredVehicles.length }}</strong> of {{ vehicles.length }} Vehicles
+              </span>
+            </div>
+          </div>
+
           <div class="table-responsive">
             <table class="table table-hover table-striped table-sm custom-fleet-table mb-0">
               <thead>
@@ -562,11 +811,11 @@
                   <th>Fuel Type</th>
                   <th>Tank Capacity (L)</th>
                   <th>Benchmark Mileage (km/L)</th>
-                  <th style="width: 90px;" class="text-center">Action</th>
+                  <th style="width: 100px;" class="text-center">Action</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let v of vehicles; let i = index">
+                <tr *ngFor="let v of filteredVehicles; let i = index">
                   <td class="text-center text-muted fw-bold">{{ i + 1 }}</td>
                   <td class="fw-bold text-dark">
                     {{ v.vehicle_no }}
@@ -583,9 +832,15 @@
                     <strong class="text-success">{{ v.expected_mileage || 4.50 }} km/L</strong>
                   </td>
                   <td class="text-center">
-                    <button class="btn btn-default btn-xs shadow-sm text-primary" (click)="editCalibration(v)" title="Edit Calibration Profile">
+                    <button class="btn btn-default btn-xs shadow-sm text-primary px-2" (click)="editCalibration(v)" title="Edit Tank Calibration Profile">
                       <i class="fas fa-edit me-1"></i> Calibrate
                     </button>
+                  </td>
+                </tr>
+                <tr *ngIf="filteredVehicles.length === 0">
+                  <td colspan="7" class="text-center py-4 text-muted">
+                    <i class="fas fa-search fa-2x mb-2 d-block text-muted"></i>
+                    No vehicles found {{ searchCalibrationText ? 'matching "' + searchCalibrationText + '"' : '' }}.
                   </td>
                 </tr>
               </tbody>
@@ -602,13 +857,19 @@
        ========================================== -->
 
   <!-- Calibration Modal -->
-  <div class="modal-backdrop-custom" *ngIf="editingVehicle">
-    <div class="modal-card-custom p-3">
+  <div class="modal-backdrop-custom" *ngIf="editingVehicle" (click)="cancelCalibration()">
+    <div class="modal-card-custom p-3" (click)="$event.stopPropagation()">
       <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-        <h6 class="fw-bold text-dark m-0">Calibrate Tank: {{ editingVehicle.vehicle_no }}</h6>
+        <h6 class="fw-bold text-dark m-0">
+          <i class="fas fa-oil-can text-primary me-2"></i>Calibrate Tank: {{ editingVehicle.vehicle_no }}
+        </h6>
         <button type="button" class="close text-muted" (click)="cancelCalibration()">&times;</button>
       </div>
       <div class="modal-body p-0">
+        <div class="form-group mb-2">
+          <label class="form-label small fw-bold">Vehicle Registration</label>
+          <input type="text" [value]="editingVehicle.vehicle_no" readonly disabled class="form-control form-control-sm bg-light fw-bold text-dark" />
+        </div>
         <div class="form-group mb-2">
           <label class="form-label small fw-bold">Fuel Type</label>
           <select [(ngModel)]="editingVehicle.fuel_type" class="form-control form-control-sm">
@@ -619,19 +880,21 @@
           </select>
         </div>
         <div class="form-group mb-2">
-          <label class="form-label small fw-bold">Max Tank Capacity (Liters)</label>
-          <input type="number" [(ngModel)]="editingVehicle.tank_capacity" class="form-control form-control-sm" />
-          <small class="text-muted" style="font-size: 11px;">Used to catch fake/inflated fuel receipts.</small>
+          <label class="form-label small fw-bold">Max Tank Capacity (Liters) <span class="text-danger">*</span></label>
+          <input type="number" min="1" [(ngModel)]="editingVehicle.tank_capacity" class="form-control form-control-sm" placeholder="e.g. 150" />
+          <small class="text-muted" style="font-size: 11px;">Prevents fraudulent claims exceeding the vehicle's physical fuel tank capacity.</small>
         </div>
         <div class="form-group mb-2">
-          <label class="form-label small fw-bold">Expected Benchmark Mileage (km/L)</label>
-          <input type="number" step="0.1" [(ngModel)]="editingVehicle.expected_mileage" class="form-control form-control-sm" />
-          <small class="text-muted" style="font-size: 11px;">Drops below 30% of this benchmark trigger alarms.</small>
+          <label class="form-label small fw-bold">Expected Benchmark Mileage (km/L) <span class="text-danger">*</span></label>
+          <input type="number" step="0.1" min="0.5" [(ngModel)]="editingVehicle.expected_mileage" class="form-control form-control-sm" placeholder="e.g. 4.5" />
+          <small class="text-muted" style="font-size: 11px;">Drops &gt;30% below this standard trigger anti-theft alarms.</small>
         </div>
       </div>
       <div class="border-top pt-2 mt-3 d-flex justify-content-end gap-2">
-        <button class="btn btn-default btn-sm shadow-sm" (click)="cancelCalibration()">Cancel</button>
-        <button class="btn btn-primary btn-sm shadow-sm" (click)="saveCalibration()">Save Calibration</button>
+        <button type="button" class="btn btn-default btn-sm shadow-sm" (click)="cancelCalibration()">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm shadow-sm" (click)="saveCalibration()">
+          <i class="fas fa-check-circle me-1"></i> Save Calibration
+        </button>
       </div>
     </div>
   </div>
@@ -660,14 +923,24 @@
     </div>
   </div>
 
-  <!-- Receipt Viewer Modal -->
-  <div class="modal-backdrop-custom" *ngIf="selectedReceiptImage" (click)="closeReceiptModal()">
-    <div class="modal-card-custom p-3 text-center" (click)="$event.stopPropagation()" style="max-width: 480px;">
+  <!-- Unified Image Viewer Modal (Odometer Proof or Refueling Receipt) -->
+  <div class="modal-backdrop-custom" *ngIf="viewModalImage || selectedReceiptImage" (click)="closeImageModal()">
+    <div class="modal-card-custom p-3 text-center" (click)="$event.stopPropagation()" style="max-width: 520px; width: 95%;">
       <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-        <h6 class="fw-bold text-dark m-0">Refueling Slip Receipt</h6>
-        <button type="button" class="close text-muted" (click)="closeReceiptModal()">&times;</button>
+        <h6 class="fw-bold text-dark m-0">
+          <i class="fas fa-image text-primary me-2"></i>{{ viewModalImage?.title || 'Refueling Document' }}
+        </h6>
+        <button type="button" class="close text-muted" (click)="closeImageModal()">&times;</button>
       </div>
-      <img [src]="selectedReceiptImage" alt="Fuel Receipt" class="img-fluid rounded border shadow-sm" style="max-height: 450px;" />
+      <div class="p-2 bg-light rounded border text-center">
+        <img [src]="viewModalImage?.url || selectedReceiptImage" alt="Document Preview" class="img-fluid rounded border shadow-sm" style="max-height: 480px; width: 100%; object-fit: contain;" />
+      </div>
+      <div class="mt-3 d-flex justify-content-end gap-2">
+        <a [href]="viewModalImage?.url || selectedReceiptImage" target="_blank" class="btn btn-default btn-sm shadow-sm">
+          <i class="fas fa-external-link-alt me-1"></i> Full Resolution
+        </a>
+        <button class="btn btn-primary btn-sm shadow-sm px-3" (click)="closeImageModal()">Close</button>
+      </div>
     </div>
   </div>
 

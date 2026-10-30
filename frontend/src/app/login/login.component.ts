@@ -66,7 +66,12 @@ export class LoginComponent implements OnInit {
           token = JSON.parse(token);
         }
         if (token) {
-          this.router.navigate(['/home']);
+          const userRole = (token.usr?.role || '').toString().toLowerCase().trim();
+          if (userRole === 'fuel manager' || userRole === 'fuel_manager') {
+            this.router.navigate(['/fuel-management']);
+          } else {
+            this.router.navigate(['/home']);
+          }
         }
       }
     } catch (e) {
@@ -155,7 +160,12 @@ export class LoginComponent implements OnInit {
         localStorage.setItem('token', JSON.stringify(data));
         this.toastr.success('Welcome back to GMC ICCC!', 'Login Successful');
         setTimeout(() => {
-          window.location.href = '/vehicle-master';
+          const userRole = (data?.usr?.role || '').toString().toLowerCase().trim();
+          if (userRole === 'fuel manager' || userRole === 'fuel_manager') {
+            window.location.href = '/fuel-management';
+          } else {
+            window.location.href = '/vehicle-master';
+          }
         }, 500);
       } else {
         this.toastr.error('Failed to establish session. Please try again.', 'Login Error');

@@ -44,6 +44,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DECIMAL(10, 2),
             allowNull: true
         },
+        odometer_distance_km: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: true
+        },
         gps_distance_km: {
             type: DataTypes.DECIMAL(10, 2),
             allowNull: true
@@ -69,6 +73,10 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true
         },
         receipt_image: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        odometer_image: {
             type: DataTypes.STRING,
             allowNull: true
         },

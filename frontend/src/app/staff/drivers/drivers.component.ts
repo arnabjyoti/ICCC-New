@@ -6,6 +6,7 @@ import { AppService } from 'src/app/app.service';
 import { environment } from 'src/environments/environment';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-drivers',
@@ -40,6 +41,8 @@ export class DriversComponent {
 
   busDriverList: any;
   driverList: any[] = [];
+  filteredDriverList: any[] = [];
+  searchText: string = '';
 
   ngOnInit(): void {
     this.getDrivers();
@@ -269,6 +272,7 @@ export class DriversComponent {
     this.http.get(ENDPOINT).subscribe(
       (response: any) => {
         this.driverList = response || [];
+        this.filterDrivers();
       },
       (error) => {
         console.error('error here ', error);
@@ -276,6 +280,76 @@ export class DriversComponent {
       }
     );
   };
+
+  filterDrivers(): void {
+    if (!this.searchText || !this.searchText.trim()) {
+      this.filteredDriverList = [...(this.driverList || [])];
+      return;
+    }
+    const q = this.searchText.trim().toLowerCase();
+    this.filteredDriverList = (this.driverList || []).filter((d: any) => {
+      return (
+        (d.driver_id && d.driver_id.toString().toLowerCase().includes(q)) ||
+        (d.driver_name && d.driver_name.toString().toLowerCase().includes(q)) ||
+        (d.contact_no && d.contact_no.toString().toLowerCase().includes(q)) ||
+        (d.dl && d.dl.toString().toLowerCase().includes(q)) ||
+        (d.aadhaar && d.aadhaar.toString().toLowerCase().includes(q)) ||
+        (d.pan && d.pan.toString().toLowerCase().includes(q)) ||
+        (d.voter && d.voter.toString().toLowerCase().includes(q)) ||
+        (d.address && d.address.toString().toLowerCase().includes(q)) ||
+        (d.status && d.status.toString().toLowerCase().includes(q))
+      );
+    });
+  }
+
+  clearSearch(): void {
+    this.searchText = '';
+    this.filterDrivers();
+  }
+
+  exportToExcel(): void {
+    const listToExport = (this.searchText && this.searchText.trim()) ? this.filteredDriverList : this.driverList;
+    if (!listToExport || listToExport.length === 0) {
+      this.toastr.warning('No driver data available to export.', 'Warning');
+      return;
+    }
+
+    const excelRows = listToExport.map((item: any, index: number) => ({
+      '#': index + 1,
+      'Driver ID': item.driver_id || '-',
+      'Driver Name': item.driver_name || '-',
+      'Contact Number': item.contact_no || '-',
+      'Driving License': item.dl || '-',
+      'Aadhaar': item.aadhaar || '-',
+      'PAN': item.pan || '-',
+      'Voter ID': item.voter || '-',
+      'Address': item.address || '-',
+      'Status': item.status || 'Active'
+    }));
+
+    const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(excelRows);
+
+    worksheet['!cols'] = [
+      { wch: 6 },
+      { wch: 16 },
+      { wch: 22 },
+      { wch: 18 },
+      { wch: 20 },
+      { wch: 18 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 32 },
+      { wch: 12 }
+    ];
+
+    const workbook: XLSX.WorkBook = {
+      Sheets: { 'Drivers': worksheet },
+      SheetNames: ['Drivers']
+    };
+
+    XLSX.writeFile(workbook, `GMC_Driver_Directory_${new Date().getTime()}.xlsx`);
+    this.toastr.success('Driver directory exported to Excel successfully!', 'Success');
+  }
 
   toBeDeletedDriverRecord: any = {};
   openConfirmationDialog = (data: any) => {
@@ -305,8 +379,12 @@ export class DriversComponent {
   }
 
   selectedData: any;
-  viewDriverData = (id: any) => {
-    this.selectedData = this.driverList[id];
+  viewDriverData = (dataOrIndex: any) => {
+    if (typeof dataOrIndex === 'number') {
+      this.selectedData = this.filteredDriverList[dataOrIndex] || this.driverList[dataOrIndex];
+    } else {
+      this.selectedData = dataOrIndex;
+    }
   };
 
   activeTabName: any = 'Driver';
@@ -315,7 +393,8 @@ export class DriversComponent {
   };
 
   generatePDF(): void {
-    if (!this.driverList || this.driverList.length === 0) {
+    const listToExport = (this.searchText && this.searchText.trim()) ? this.filteredDriverList : this.driverList;
+    if (!listToExport || listToExport.length === 0) {
       this.toastr.warning('No drivers found to generate report', 'Warning');
       return;
     }
@@ -333,7 +412,7 @@ export class DriversComponent {
       'Status'
     ]];
 
-    const rows = this.driverList.map((d: any, index: number) => [
+    const rows = listToExport.map((d: any, index: number) => [
       index + 1,
       d.driver_id || '-',
       d.driver_name || '-',
@@ -348,7 +427,7 @@ export class DriversComponent {
     doc.text('GMC - Driver Directory Report', 14, 15);
     doc.setFontSize(9);
     doc.setTextColor(100);
-    doc.text(`Total Drivers: ${this.driverList.length}  |  Generated: ${new Date().toLocaleString()}`, 14, 22);
+    doc.text(`Total Drivers: ${listToExport.length}  |  Generated: ${new Date().toLocaleString()}`, 14, 22);
 
     autoTable(doc, {
       head: headers,

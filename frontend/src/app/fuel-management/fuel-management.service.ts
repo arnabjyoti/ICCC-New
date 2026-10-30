@@ -51,11 +51,17 @@ export class FuelManagementService {
     return this.http.get(`${this.baseUrl}/api/getVehicleMaster`);
   }
 
+  getLastRefuelInfo(vehicleId: number | string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/api/getLastRefuelInfo`, {
+      params: new HttpParams().set('vehicle_id', vehicleId.toString())
+    });
+  }
+
   getDrivers(): Observable<any> {
     return this.http.get(`${this.baseUrl}/api/getDriver`);
   }
 
-  updateVehicleFuelProfile(payload: { vehicle_id: number; fuel_type?: string; tank_capacity?: number; expected_mileage?: number }): Observable<any> {
+  updateVehicleFuelProfile(payload: { vehicle_id?: number | string; id?: number | string; vehicle_no?: string; fuel_type?: string; tank_capacity?: number; expected_mileage?: number }): Observable<any> {
     return this.http.post(`${this.baseUrl}/api/updateVehicleFuelProfile`, payload);
   }
 }
